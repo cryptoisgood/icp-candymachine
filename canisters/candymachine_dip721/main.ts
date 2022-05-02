@@ -1,13 +1,17 @@
-import {ic, Query, nat, Principal, Update, Init, PreUpgrade, PostUpgrade, Opt, nat8} from 'azle';
+import {CanisterResult, ic, Init, nat, Opt, PostUpgrade, PreUpgrade, Principal, Query, Update, UpdateAsync} from 'azle';
 import {
     Metadata,
+    NftError,
     PrincipalNatVariant,
+    ResponseDto,
     StableStorage,
     TokenIdPrincipal,
     TokenIdToMetadata,
     TokenMetadata
 } from "./types";
 import {isEqual, isFalse, isTrue, notEqual} from "./safeAssert";
+import {CanisterStatusResult, Management} from 'azle/canisters/management';
+
 
 const _metadata: Metadata = {
     name: "SampleNft",
@@ -22,6 +26,7 @@ const owners  = new Map<nat, Principal>();
 const balances  = new Map<Principal, nat>();
 const tokenApprovals  = new Map<nat, Principal>();
 const operatorApprovals  = new Map<Principal, Principal[]>();
+export const ManagementCanister = ic.canisters.Management<Management>('aaaaa-aa');
 
 export function init(): Init {
     ic.stableStorage<StableStorage>().tokenPk = 0n;
@@ -115,6 +120,21 @@ export function custodians(): Query<Principal[]> {
     return _metadata.custodians;
 }
 
+export function* cycles(): UpdateAsync<Opt<nat>> {
+    const canisterStatusResult: CanisterResult<CanisterStatusResult> = yield ManagementCanister.canister_status({
+        canister_id: ic.id()
+    });
+    if (canisterStatusResult.ok === undefined) {
+        return null;
+    }
+
+    return canisterStatusResult.ok.cycles;
+}
+
+export function totalUniqueHolders(): Query<Opt<nat>> {
+    return tokens.size ? BigInt(tokens.size) : null;
+}
+
 export function isApprovedForAll(owner : Principal, operator : Principal): Query<boolean> {
     return _isApprovedForAll(owner, operator);
 }
@@ -172,7 +192,7 @@ export function transferFrom(from : Principal, to : Principal, tokenId : nat): U
     _transfer(from, to, tokenId);
 }
 
-export function mint(image: nat8[]): Update<nat> {
+export function mint(uri: string): Update<nat> {
     ic.stableStorage<StableStorage>().tokenPk += 1n;
     const token = ic.stableStorage<StableStorage>().tokenPk;
     const caller = ic.caller();
@@ -181,7 +201,7 @@ export function mint(image: nat8[]): Update<nat> {
         owner: caller,
         operator: null,
         properties: [
-            ["image", image]
+            {"location": uri}
         ],
         is_burned: false,
         minted_at: BigInt(Date.now()),
@@ -196,16 +216,23 @@ export function mint(image: nat8[]): Update<nat> {
     return token;
 }
 
+function tokenMetadata(tokenId: nat): Query<ResponseDto> {
+    if (_exists(tokenId)) {
+        return {
+            Ok: tokens.get(tokenId)
+        }
+    }
+
+    return {
+        Err: NftError.TokenNotFound
+    }
+}
 
 // private
 
 function _ownerOf(tokenId : nat) : Principal {
     return owners.get(tokenId);
 }
-//
-// function _tokenURI(tokenId : nat) : string {
-//     return tokens.get(tokenId);
-// }
 
 function _isApprovedForAll(owner : Principal, operator : Principal) : boolean {
     if (operatorApprovals.get(owner)) {

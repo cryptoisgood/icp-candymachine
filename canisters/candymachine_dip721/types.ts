@@ -22,6 +22,10 @@ export type OperatorApprovalVariant = Variant<{
     principals?: Principal[]
 }>;
 
+export type PropertiesVariant = Variant<{
+    location?: string
+}>;
+
 export type StableStorage = Stable<{
     tokenPk: nat,
     tokens: TokenIdToMetadata[],
@@ -38,18 +42,35 @@ export type Metadata = {
     symbol: string
 }
 
-export type TokenMetadata  = {
+export type ResponseDto = Variant<{
+    Ok?: Opt<TokenMetadata>,
+    Err?: Opt<string>
+}>;
+
+export enum NftError {
+    UnauthorizedOwner = "UnauthorizedOwner",
+    UnauthorizedOperator = "UnauthorizedOperator",
+    OwnerNotFound = "OwnerNotFound",
+    OperatorNotFound = "OperatorNotFound",
+    TokenNotFound = "TokenNotFound",
+    ExistedNFT = "ExistedNFT",
+    SelfApprove = "SelfApprove",
+    SelfTransfer = "SelfTransfer",
+    TxNotFound = "TxNotFound",
+}
+
+export type TokenMetadata  = Variant<{
     token_identifier: int64,
-    owner: Opt<Principal>,
-    operator: Opt<Principal>,
+    owner: Principal,
+    operator?: Principal,
+    properties: PropertiesVariant[],
     is_burned: boolean,
-    properties: [string, nat8[]][],
     minted_at: int64,
     minted_by: Principal,
-    transferred_at: Opt<int64>,
-    transferred_by: Opt<Principal>,
-    approved_at: Opt<int64>,
-    approved_by: Opt<Principal>,
-    burned_at: Opt<int64>,
-    burned_by: Opt<Principal>
-}
+    transferred_at?: int64,
+    transferred_by?: Principal,
+    approved_at?: int64,
+    approved_by?: Principal,
+    burned_at?: int64,
+    burned_by?: Principal
+}>
