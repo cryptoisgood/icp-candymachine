@@ -1,5 +1,5 @@
 import {ic, Query, nat, Principal, Update, Init, PreUpgrade, PostUpgrade} from 'azle';
-import {PrincipalNatVariant, StableStorage, TokenIdPrincipal, TokenIdToUri} from "./types";
+import {PrincipalNatVariant, StableStorage, StringOptional, TokenIdPrincipal, TokenIdToUri} from "./types";
 import {isEqual, isFalse, isTrue, notEqual} from "./safeAssert";
 
 const _name = "SampleNft";
@@ -77,15 +77,15 @@ export function postUpgrade(): PostUpgrade {
 }
 
 export function balanceOf(p: Principal): Query<nat> {
-    return balances.get(p);
+    return balances.get(p) || 0n;
 }
 
 export function ownerOf(tokenId: nat): Query<Principal> {
-    return _ownerOf(tokenId);
+    return _ownerOf(tokenId) || "";
 }
 
 export function tokenURI(tokenId: nat): Query<string> {
-    return _tokenURI(tokenId);
+    return _tokenURI(tokenId) || "";
 }
 
 export function name() : Query<string> {
@@ -97,7 +97,7 @@ export function symbol() : Query<string> {
 }
 
 export function isApprovedForAll(owner : Principal, operator : Principal): Query<boolean> {
-    return _isApprovedForAll(owner, operator)
+    return _isApprovedForAll(owner, operator);
 }
 
 export function approve(to : Principal, tokenId : nat) : Update<void>{
@@ -164,11 +164,11 @@ export function mint(uri: string): Update<nat> {
 
 // private
 
-function _ownerOf(tokenId : nat) : Principal | undefined {
+function _ownerOf(tokenId : nat) : Principal {
     return owners.get(tokenId);
 }
 
-function _tokenURI(tokenId : nat) : string | undefined {
+function _tokenURI(tokenId : nat) : string {
     return tokenURIs.get(tokenId);
 }
 
@@ -189,7 +189,7 @@ function _approve(to: Principal, tokenId: nat) {
     tokenApprovals.set(tokenId, to);
 }
 
-function _getApproved(tokenId : nat) : Principal | undefined {
+function _getApproved(tokenId : nat) : Principal {
     isTrue(_exists(tokenId), "token id does not exist for _getApproved");
 
     if (tokenApprovals.has(tokenId)) {
