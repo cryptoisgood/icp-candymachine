@@ -2,8 +2,6 @@ import {Stable, Variant, Principal, nat} from "azle";
 
 // export type TokenId = nat;
 
-export type StringOptional = Variant<string | undefined>;
-
 export type TokenIdToUri = Variant<{
     tokenId?: nat;
     uri?: string;

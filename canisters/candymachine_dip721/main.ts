@@ -1,5 +1,5 @@
-import {ic, Query, nat, Principal, Update, Init, PreUpgrade, PostUpgrade} from 'azle';
-import {PrincipalNatVariant, StableStorage, StringOptional, TokenIdPrincipal, TokenIdToUri} from "./types";
+import {ic, Query, nat, Principal, Update, Init, PreUpgrade, PostUpgrade, Opt} from 'azle';
+import {PrincipalNatVariant, StableStorage, TokenIdPrincipal, TokenIdToUri} from "./types";
 import {isEqual, isFalse, isTrue, notEqual} from "./safeAssert";
 
 const _name = "SampleNft";
@@ -76,16 +76,16 @@ export function postUpgrade(): PostUpgrade {
     ic.stableStorage<StableStorage>().operatorApprovalsEntries = [];
 }
 
-export function balanceOf(p: Principal): Query<nat> {
-    return balances.get(p) || 0n;
+export function balanceOf(p: Principal): Query<Opt<nat>> {
+    return balances.get(p);
 }
 
-export function ownerOf(tokenId: nat): Query<Principal> {
-    return _ownerOf(tokenId) || "";
+export function ownerOf(tokenId: nat): Query<Opt<Principal>> {
+    return _ownerOf(tokenId);
 }
 
-export function tokenURI(tokenId: nat): Query<string> {
-    return _tokenURI(tokenId) || "";
+export function tokenURI(tokenId: nat): Query<Opt<string>> {
+    return _tokenURI(tokenId);
 }
 
 export function name() : Query<string> {
@@ -104,7 +104,7 @@ export function approve(to : Principal, tokenId : nat) : Update<void>{
     const caller = ic.caller();
     const owner = _ownerOf(tokenId);
     if (!owner) {
-        throw Error("No owner for token");
+        ic.trap("No owner for token");
     }
 
     if (owner === to && owner == caller && _isApprovedForAll(owner, caller)) {
@@ -118,7 +118,7 @@ export function getApproved(tokenId: nat): Update<Principal> {
         return appr;
     }
 
-    throw Error("None Approved");
+    ic.trap("None Approved");
 }
 
 export function setApprovalForAll(op : Principal, isApproved : boolean): Update<void> {
