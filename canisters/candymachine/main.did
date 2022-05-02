@@ -1,0 +1,4 @@
+service: {
+    "getNat32": () -> (nat32) query;
+    "printNat32": (nat32) -> (nat32) query;
+}

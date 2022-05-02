@@ -1,0 +1,21 @@
+type TokenIdToUri = variant { "tokenId": nat; "uri": text };
+
+type TokenIdPrincipal = variant { "tokenId": nat; "principal": principal };
+
+type PrincipalNatVariant = variant { "principal": principal; "balance": nat };
+
+type OperatorApprovalVariant = variant { "principal": principal; "principals": vec principal };
+
+service: () -> {
+    "balanceOf": (principal) -> (nat) query;
+    "ownerOf": (nat) -> (principal) query;
+    "tokenURI": (nat) -> (text) query;
+    "name": () -> (text) query;
+    "symbol": () -> (text) query;
+    "isApprovedForAll": (principal, principal) -> (bool) query;
+    "approve": (principal, nat) -> ();
+    "getApproved": (nat) -> (principal);
+    "setApprovalForAll": (principal, bool) -> ();
+    "transferFrom": (principal, principal, nat) -> ();
+    "mint": (text) -> (nat);
+}

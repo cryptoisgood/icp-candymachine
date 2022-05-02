@@ -40,7 +40,7 @@ const isDevelopment = process.env.NODE_ENV !== "production";
 
 const frontendDirectory = "candymachine_assets";
 
-const asset_entry = path.join("src", frontendDirectory, "src", "index.html");
+const asset_entry = path.join("canisters", frontendDirectory, "src", "index.html");
 
 module.exports = {
   target: "web",
@@ -48,7 +48,7 @@ module.exports = {
   entry: {
     // The frontend.entrypoint points to the HTML file for this build, so we need
     // to replace the extension to `.js`.
-    index: path.join(__dirname, asset_entry).replace(/\.html$/, ".js"),
+    index: path.join(__dirname, asset_entry).replace(/\.html$/, ".jsx"),
   },
   devtool: isDevelopment ? "source-map" : false,
   optimization: {
@@ -75,12 +75,12 @@ module.exports = {
   // webpack configuration. For example, if you are using React
   // modules and CSS as described in the "Adding a stylesheet"
   // tutorial, uncomment the following lines:
-  // module: {
-  //  rules: [
-  //    { test: /\.(ts|tsx|jsx)$/, loader: "ts-loader" },
-  //    { test: /\.css$/, use: ['style-loader','css-loader'] }
-  //  ]
-  // },
+  module: {
+   rules: [
+     { test: /\.(ts|tsx|jsx)$/, loader: "ts-loader" },
+     { test: /\.css$/, use: ['style-loader','css-loader'] }
+   ]
+  },
   plugins: [
     new HtmlWebpackPlugin({
       template: path.join(__dirname, asset_entry),
@@ -89,7 +89,7 @@ module.exports = {
     new CopyPlugin({
       patterns: [
         {
-          from: path.join(__dirname, "src", frontendDirectory, "assets"),
+          from: path.join(__dirname, "canisters", frontendDirectory, "assets"),
           to: path.join(__dirname, "dist", frontendDirectory),
         },
       ],
