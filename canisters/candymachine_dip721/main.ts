@@ -1,7 +1,6 @@
 import {CanisterResult, ic, Init, nat, Opt, PostUpgrade, PreUpgrade, Principal, Query, Update, UpdateAsync} from 'azle';
 import {
     Metadata,
-    NftError,
     PrincipalNatVariant,
     ResponseDto,
     StableStorage,
@@ -11,7 +10,7 @@ import {
 } from "./types";
 import {isEqual, isFalse, isTrue, notEqual} from "./safeAssert";
 import {CanisterStatusResult, Management} from 'azle/canisters/management';
-
+import {TokenNotFound} from "./constants";
 
 const _metadata: Metadata = {
     name: "SampleNft",
@@ -216,7 +215,7 @@ export function mint(uri: string): Update<nat> {
     return token;
 }
 
-function tokenMetadata(tokenId: nat): Query<ResponseDto> {
+export function tokenMetadata(tokenId: nat): Query<ResponseDto> {
     if (_exists(tokenId)) {
         return {
             Ok: tokens.get(tokenId)
@@ -224,7 +223,7 @@ function tokenMetadata(tokenId: nat): Query<ResponseDto> {
     }
 
     return {
-        Err: NftError.TokenNotFound
+        Err: TokenNotFound
     }
 }
 

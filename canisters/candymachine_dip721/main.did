@@ -34,9 +34,9 @@ type PrincipalNatVariant = variant { "principal": principal; "balance": nat };
 
 type OperatorApprovalVariant = variant { "principal": principal; "principals": vec principal };
 
-type TokenMetadata = variant { "token_identifier": int64; "owner": principal; "operator": principal; "properties": vec PropertiesVariant; "is_burned": bool; "minted_at": int64; "minted_by": principal; "transferred_at": int64; "transferred_by": principal; "approved_at": int64; "approved_by": principal; "burned_at": int64; "burned_by": principal };
+type TokenMetadata = variant { "token_identifier": int64; "owner": principal; "operator": principal; "properties": vec locationVariant; "is_burned": bool; "minted_at": int64; "minted_by": principal; "transferred_at": int64; "transferred_by": principal; "approved_at": int64; "approved_by": principal; "burned_at": int64; "burned_by": principal };
 
-type PropertiesVariant = variant { "location": text };
+type locationVariant = variant { "location": text };
 
 type CanisterStatus = variant { "running": null; "stopping": null; "stopped": null };
 

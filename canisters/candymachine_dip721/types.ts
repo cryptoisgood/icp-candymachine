@@ -22,8 +22,10 @@ export type OperatorApprovalVariant = Variant<{
     principals?: Principal[]
 }>;
 
-export type PropertiesVariant = Variant<{
+export type propertyVariant = Variant<{
     location?: string
+    contentType?: string
+    thumbnail?: string
 }>;
 
 export type StableStorage = Stable<{
@@ -47,23 +49,12 @@ export type ResponseDto = Variant<{
     Err?: Opt<string>
 }>;
 
-export enum NftError {
-    UnauthorizedOwner = "UnauthorizedOwner",
-    UnauthorizedOperator = "UnauthorizedOperator",
-    OwnerNotFound = "OwnerNotFound",
-    OperatorNotFound = "OperatorNotFound",
-    TokenNotFound = "TokenNotFound",
-    ExistedNFT = "ExistedNFT",
-    SelfApprove = "SelfApprove",
-    SelfTransfer = "SelfTransfer",
-    TxNotFound = "TxNotFound",
-}
 
 export type TokenMetadata  = Variant<{
     token_identifier: int64,
     owner: Principal,
     operator?: Principal,
-    properties: PropertiesVariant[],
+    properties: propertyVariant[],
     is_burned: boolean,
     minted_at: int64,
     minted_by: Principal,
