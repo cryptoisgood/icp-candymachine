@@ -1,12 +1,20 @@
-import {Canister, CanisterResult, ic, Query, nat32} from 'azle';
+import {Canister, CanisterResult, ic, Query, nat32, Opt, nat, Principal} from 'azle';
 
+type dip721Canister = Canister<{
+    balanceOf(principal: Principal): CanisterResult<Opt<nat>>;
+    ownerOf(tokenId: nat): CanisterResult<Opt<Principal>>;
+    tokenURI(tokenId: nat): CanisterResult<Opt<string>>;
+    name(): CanisterResult<string>;
+    symbol(): CanisterResult<string>;
+    isApprovedForAll(owner: Principal, operator: Principal): CanisterResult<boolean>;
+    approve(to: Principal, tokenId: nat): CanisterResult<void>;
+    getApproved(tokenId: nat): CanisterResult<Principal>;
+    setApprovalForAll(op: Principal, isApproved: boolean): CanisterResult<void>;
+    transferFrom(from: Principal, to: Principal, tokenId: nat): CanisterResult<void>;
+    mint(uri: string): CanisterResult<nat>;
+}>;
 
-// type DB = Canister<{
-//     graphql_query(query: string, params: string): CanisterResult<string>;
-//     graphql_mutation(query: string, params: string): CanisterResult<string>;
-// }>;
-//
-// let db = ic.canisters.DB<DB>('r7inp-6aaaa-aaaaa-aaabq-cai');
+let dip721 = ic.canisters.dip721<dip721Canister>('rkp4c-7iaaa-aaaaa-aaaca-cai');
 
 export function getNat32(): Query<nat32> {
     return 4294967295;

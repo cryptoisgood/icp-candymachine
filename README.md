@@ -1,6 +1,11 @@
 # candymachine
 Candy machine allows you to create an NFT project using azle
 
+
+# Warning
+Currently, standard is incorrect. Will be making gradual updated and eventually follow the following nft standard.
+https://github.com/Psychedelic/DIP721/blob/develop/spec.md#v1-to-v2----whats-changed
+
 ```bash
 cd candymachine/
 dfx help

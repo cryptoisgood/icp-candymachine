@@ -1,12 +1,23 @@
-import {ic, Query, nat, Principal, Update, Init, PreUpgrade, PostUpgrade, Opt} from 'azle';
-import {PrincipalNatVariant, StableStorage, TokenIdPrincipal, TokenIdToUri} from "./types";
+import {ic, Query, nat, Principal, Update, Init, PreUpgrade, PostUpgrade, Opt, nat8} from 'azle';
+import {
+    Metadata,
+    PrincipalNatVariant,
+    StableStorage,
+    TokenIdPrincipal,
+    TokenIdToMetadata,
+    TokenMetadata
+} from "./types";
 import {isEqual, isFalse, isTrue, notEqual} from "./safeAssert";
 
-const _name = "SampleNft";
-const _symbol = "SNFT";
+const _metadata: Metadata = {
+    name: "SampleNft",
+    symbol: "SNFT",
+    logo: "",
+    custodians: []
+}
 
 const whiteList = new Set<Principal>()
-const tokenURIs  = new Map<nat, string>();
+const tokens  = new Map<nat, TokenMetadata>();
 const owners  = new Map<nat, Principal>();
 const balances  = new Map<Principal, nat>();
 const tokenApprovals  = new Map<nat, Principal>();
@@ -14,7 +25,7 @@ const operatorApprovals  = new Map<Principal, Principal[]>();
 
 export function init(): Init {
     ic.stableStorage<StableStorage>().tokenPk = 0n;
-    ic.stableStorage<StableStorage>().tokenURIEntries = [];
+    ic.stableStorage<StableStorage>().tokens = [];
     ic.stableStorage<StableStorage>().ownersEntries = [];
     ic.stableStorage<StableStorage>().balancesEntries = [];
     ic.stableStorage<StableStorage>().tokenApprovalsEntries = [];
@@ -22,9 +33,9 @@ export function init(): Init {
 }
 
 export function preUpgrade(): PreUpgrade {
-    ic.stableStorage<StableStorage>().tokenURIEntries =
-        _mapToArray<nat, string>(tokenURIs, (key, val) => {
-            return {tokenId: key, uri: val} as TokenIdToUri;
+    ic.stableStorage<StableStorage>().tokens =
+        _mapToArray<nat, TokenMetadata>(tokens, (key, val) => {
+            return {tokenId: key, tokenMetadata: val} as TokenIdToMetadata;
         } );
 
     ic.stableStorage<StableStorage>().ownersEntries =
@@ -49,8 +60,8 @@ export function preUpgrade(): PreUpgrade {
 }
 
 export function postUpgrade(): PostUpgrade {
-    for (let tokenURIEntry of ic.stableStorage<StableStorage>().tokenURIEntries) {
-        tokenURIs.set(tokenURIEntry.tokenId, tokenURIEntry.uri);
+    for (let tokenURIEntry of ic.stableStorage<StableStorage>().tokens) {
+        tokens.set(tokenURIEntry.tokenId, tokenURIEntry.tokenMetadata);
     }
 
     for (let ownersEntry of ic.stableStorage<StableStorage>().ownersEntries) {
@@ -69,7 +80,7 @@ export function postUpgrade(): PostUpgrade {
         operatorApprovals.set(operatorApprovalsEntry.principal, operatorApprovalsEntry.principals);
     }
 
-    ic.stableStorage<StableStorage>().tokenURIEntries = [];
+    ic.stableStorage<StableStorage>().tokens = [];
     ic.stableStorage<StableStorage>().ownersEntries = [];
     ic.stableStorage<StableStorage>().balancesEntries = [];
     ic.stableStorage<StableStorage>().tokenApprovalsEntries = [];
@@ -84,16 +95,24 @@ export function ownerOf(tokenId: nat): Query<Opt<Principal>> {
     return _ownerOf(tokenId);
 }
 
-export function tokenURI(tokenId: nat): Query<Opt<string>> {
-    return _tokenURI(tokenId);
+export function metadata(): Query<Metadata> {
+    return _metadata;
 }
 
 export function name() : Query<string> {
-    return _name;
+    return _metadata.name;
 }
 
 export function symbol() : Query<string> {
-    return _symbol;
+    return _metadata.symbol;
+}
+
+export function logo(): Query<string> {
+    return _metadata.logo;
+}
+
+export function custodians(): Query<Principal[]> {
+    return _metadata.custodians;
 }
 
 export function isApprovedForAll(owner : Principal, operator : Principal): Query<boolean> {
@@ -153,11 +172,27 @@ export function transferFrom(from : Principal, to : Principal, tokenId : nat): U
     _transfer(from, to, tokenId);
 }
 
-export function mint(uri: string): Update<nat> {
+export function mint(image: nat8[]): Update<nat> {
     ic.stableStorage<StableStorage>().tokenPk += 1n;
     const token = ic.stableStorage<StableStorage>().tokenPk;
     const caller = ic.caller();
-    _mint(caller, token, uri);
+    _mint(caller, token, {
+        token_identifier: token,
+        owner: caller,
+        operator: null,
+        properties: [
+            ["image", image]
+        ],
+        is_burned: false,
+        minted_at: BigInt(Date.now()),
+        minted_by: caller,
+        transferred_at: null,
+        transferred_by: null,
+        approved_at: null,
+        approved_by: null,
+        burned_at: null,
+        burned_by: null,
+    });
     return token;
 }
 
@@ -167,10 +202,10 @@ export function mint(uri: string): Update<nat> {
 function _ownerOf(tokenId : nat) : Principal {
     return owners.get(tokenId);
 }
-
-function _tokenURI(tokenId : nat) : string {
-    return tokenURIs.get(tokenId);
-}
+//
+// function _tokenURI(tokenId : nat) : string {
+//     return tokens.get(tokenId);
+// }
 
 function _isApprovedForAll(owner : Principal, operator : Principal) : boolean {
     if (operatorApprovals.get(owner)) {
@@ -247,11 +282,11 @@ function _incrementBalance(address: Principal) {
     }
 }
 
-function _mint(to: Principal, tokenId: nat, uri: string) {
+function _mint(to: Principal, tokenId: nat, metadata: TokenMetadata) {
     isFalse(_exists(tokenId), "token id does not exist and can't be minted");
     _incrementBalance(to);
     owners.set(tokenId, to);
-    tokenURIs.set(tokenId, uri);
+    tokens.set(tokenId, metadata);
 }
 
 function _mapToArray<key, val>(map: Map<key, val>, transformer): []{
