@@ -1,4 +1,4 @@
-import {Stable, Variant, Principal, nat, Opt, int, int64, nat8} from "azle";
+import {Stable, Variant, Principal, nat, Opt, int, int64, nat8, nat16, nat64} from "azle";
 
 // export type TokenId = nat;
 
@@ -8,8 +8,8 @@ export type TokenIdToMetadata = Variant<{
 }>;
 
 export type TokenIdPrincipal = Variant<{
-    tokenId?: nat;
     principal?: Principal;
+    tokenIds?: nat[];
 }>;
 
 export type PrincipalNatVariant = Variant<{
@@ -17,38 +17,11 @@ export type PrincipalNatVariant = Variant<{
     balance?: nat;
 }>;
 
-export type OperatorApprovalVariant = Variant<{
-    principal?: Principal
-    principals?: Principal[]
-}>;
-
 export type propertyVariant = Variant<{
     location?: string
     contentType?: string
     thumbnail?: string
 }>;
-
-export type StableStorage = Stable<{
-    tokenPk: nat,
-    tokens: TokenIdToMetadata[],
-    ownersEntries: TokenIdPrincipal[],
-    balancesEntries: PrincipalNatVariant[],
-    tokenApprovalsEntries: TokenIdPrincipal[],
-    operatorApprovalsEntries: OperatorApprovalVariant[]
-}>;
-
-export type Metadata = {
-    custodians: Principal[],
-    logo: string,
-    name: string,
-    symbol: string
-}
-
-export type ResponseDto = Variant<{
-    Ok?: Opt<TokenMetadata>,
-    Err?: Opt<string>
-}>;
-
 
 export type TokenMetadata  = Variant<{
     token_identifier: int64,
@@ -65,3 +38,62 @@ export type TokenMetadata  = Variant<{
     burned_at?: int64,
     burned_by?: Principal
 }>
+
+// http
+
+// export type HttpResponseDto = Variant<{
+//     Ok?: Opt<HttpResponse>,
+//     Err?: Opt<string>
+// }>;
+//
+// export type HeaderField = Variant<{
+//     Accept?: string
+//     AcceptEncoding?: string;
+//     AcceptLanguage?: string;
+//     Connection?: string;
+//     UpgradeInsecureRequests?: string;
+//     Cookie?: string;
+//     Host?: string;
+//     Referer?: string;
+//     SecFetchDest?: string;
+//     SecFetchMode?: string;
+//     SecFetchSite?: string;
+//     SecFetchUser?: string;
+//     UserAgent?: string;
+//     ContentType?: string;
+// }>;
+//
+// export type HttpRequest = Variant<{
+//    method: string;
+//    url: string;
+//    headers: HeaderField[];
+//    body: nat8[];
+// }>;
+//
+// export type HttpResponse = Variant<{
+//     upgrade: boolean
+//     status_code: nat16;
+//     headers: HeaderField[];
+//     body: nat8[];
+//     streamingStrategy: StreamingStrategy
+// }>;
+//
+// export type StreamingStrategy = {
+//     Callback: Callback
+// }
+//
+// export type Callback = {
+//     token: StreamingCallbackToken
+// }
+//
+// export type StreamingCallbackHttpResponse = Variant<{
+//     body: nat8[];
+//     token: Opt<StreamingCallbackToken>;
+// }>;
+//
+// export type StreamingCallbackToken = Variant<{
+//     key: string;
+//     content_encoding: string;
+//     index: nat;
+//     sha256: Opt<nat8[]>;
+// }>;

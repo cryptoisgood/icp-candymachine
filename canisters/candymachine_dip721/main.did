@@ -1,10 +1,3 @@
-type Metadata = record {
-    "custodians": vec principal;
-    "logo": text;
-    "name": text;
-    "symbol": text;
-};
-
 type CanisterStatusArgs = record {
     "canister_id": principal;
 };
@@ -24,7 +17,9 @@ type DefiniteCanisterSettings = record {
     "freezing_threshold": nat;
 };
 
-type ResponseDto = variant { "Ok": opt TokenMetadata; "Err": opt text };
+type Metadata = variant { "custodians": vec principal; "logo": text; "name": text; "symbol": text };
+
+type TokenMetadataResponseDto = variant { "Ok": opt TokenMetadata; "Err": opt text };
 
 type TokenIdToMetadata = variant { "tokenId": nat; "tokenMetadata": TokenMetadata };
 
@@ -34,9 +29,9 @@ type PrincipalNatVariant = variant { "principal": principal; "balance": nat };
 
 type OperatorApprovalVariant = variant { "principal": principal; "principals": vec principal };
 
-type TokenMetadata = variant { "token_identifier": int64; "owner": principal; "operator": principal; "properties": vec locationVariant; "is_burned": bool; "minted_at": int64; "minted_by": principal; "transferred_at": int64; "transferred_by": principal; "approved_at": int64; "approved_by": principal; "burned_at": int64; "burned_by": principal };
+type TokenMetadata = variant { "token_identifier": int64; "owner": principal; "operator": principal; "properties": vec propertyVariant; "is_burned": bool; "minted_at": int64; "minted_by": principal; "transferred_at": int64; "transferred_by": principal; "approved_at": int64; "approved_by": principal; "burned_at": int64; "burned_by": principal };
 
-type locationVariant = variant { "location": text };
+type propertyVariant = variant { "location": text; "contentType": text; "thumbnail": text };
 
 type CanisterStatus = variant { "running": null; "stopping": null; "stopped": null };
 
@@ -50,7 +45,7 @@ service: () -> {
     "custodians": () -> (vec principal) query;
     "totalUniqueHolders": () -> (opt nat) query;
     "isApprovedForAll": (principal, principal) -> (bool) query;
-    "tokenMetadata": (nat) -> (ResponseDto) query;
+    "tokenMetadata": (nat) -> (TokenMetadataResponseDto) query;
     "cycles": () -> (opt nat);
     "approve": (principal, nat) -> ();
     "getApproved": (nat) -> (principal);
