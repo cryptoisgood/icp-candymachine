@@ -1,7 +1,14 @@
 import {CanisterResult, ic, Init, nat, Opt, PostUpgrade, PreUpgrade, Principal, Query, Update, UpdateAsync} from 'azle';
 import {TokenIdPrincipal, TokenIdToMetadata, TokenMetadata} from "./types";
 import {CanisterStatusResult, Management} from 'azle/canisters/management';
-import {OperatorNotFound, OwnerNotFound, SelfApprove, TokenNotFound, UnauthorizedOwner} from "./constants";
+import {
+    OperatorNotFound,
+    OwnerNotFound,
+    SelfApprove,
+    SelfTransfer,
+    TokenNotFound, UnauthorizedOperator,
+    UnauthorizedOwner
+} from "./constants";
 import {Metadata, StableStorage, Stats, TxDetails, TxEvent} from "./state-types";
 import {BoolResponseDto, NatResponseDto, PrincipalResponseDto, TokenMetadataResponseDto} from "./response-type";
 
@@ -293,7 +300,7 @@ export function approve(approvedBy : Principal, tokenId : nat) : Update<NatRespo
 
 export function setApprovalForAll(op : Principal, isApproved : boolean): Update<NatResponseDto> {
     const caller = ic.caller();
-    if (caller != op) {
+    if (caller === op) {
         return {
             Err: SelfApprove
         };
@@ -315,19 +322,74 @@ export function setApprovalForAll(op : Principal, isApproved : boolean): Update<
     }
 }
 
-export function getApproved(tokenId: nat): Update<Principal> {
-    const appr = _getApproved(tokenId);
-    if (appr) {
-        return appr;
+export function transfer(to: Principal, tokenId : nat): Update<NatResponseDto> {
+    const caller = ic.caller();
+
+    if (caller === to) {
+        return {
+            Err: SelfTransfer
+        }
     }
 
-    ic.trap("None Approved");
+    const token = tokens.get(tokenId);
+    if (!token) {
+        return {
+            Err: TokenNotFound
+        }
+    }
+    const oldOwner = token.owner;
+    const oldOperator = token.operator;
+    _updateOwnerCache(tokenId, oldOwner, to);
+    _updateOperatorCache(tokenId, oldOperator);
+    _transfer(oldOwner, to, tokenId);
+
+    return {
+        Ok: _addTransaction(caller, "transfer", [
+            {owner: caller},
+            {to: to},
+            {token_identifier: tokenId}
+        ])
+    }
 }
 
-export function transferFrom(from : Principal, to : Principal, tokenId : nat): Update<void> {
+export function transferFrom(from : Principal, to : Principal, tokenId : nat): Update<NatResponseDto> {
     const caller = ic.caller();
-    isTrue(_isApprovedOrOwner(caller, tokenId), "transfer from is not approved or owner");
-    _transfer(from, to, tokenId);
+    if (from === to) {
+        return {
+            Err: SelfTransfer
+        }
+    }
+    const token = tokens.get(tokenId);
+    if (!token) {
+        return {
+            Err: TokenNotFound
+        }
+    }
+    const oldOwner = token.owner;
+    const oldOperator = token.operator;
+
+    if (caller != oldOwner) {
+        return {
+            Err: UnauthorizedOwner
+        }
+    }
+
+    if (caller != oldOperator) {
+        return {
+            Err: UnauthorizedOperator
+        }
+    }
+    _updateOwnerCache(tokenId, oldOwner, to);
+    _updateOperatorCache(tokenId, oldOperator);
+    _transfer(caller, to, tokenId);
+
+    return {
+        Ok: _addTransaction(caller, "transfer", [
+            {owner: caller},
+            {to: to},
+            {token_identifier: tokenId}
+        ])
+    }
 }
 
 export function mint(uri: string): Update<nat> {
@@ -383,23 +445,49 @@ function _operatorOf(tokenId: nat): Principal | undefined {
     return tokens.get(tokenId)?.operator
 }
 
-function _updateOperatorCache(tokenId: nat, oldOperator: Principal, newOperator: Principal) {
+function _updateOperatorCache(tokenId: nat, oldOperator?: Principal, newOperator?: Principal) {
     const oldOperatorTokenIdentifiers = operators.get(oldOperator);
     if (!oldOperatorTokenIdentifiers || oldOperatorTokenIdentifiers.length === 0) {
         throw OperatorNotFound;
     }
-    const mutatedArr = oldOperatorTokenIdentifiers.filter(x => x !== tokenId);
-    if (mutatedArr.length === 0) {
-        operators.delete(oldOperator);
-    } else {
-        operators.set(oldOperator, mutatedArr);
+    if (oldOperator) {
+        const mutatedArr = oldOperatorTokenIdentifiers.filter(x => x !== tokenId);
+        if (mutatedArr.length === 0) {
+            operators.delete(oldOperator);
+        } else {
+            operators.set(oldOperator, mutatedArr);
+        }
     }
+    if (newOperator) {
+        const newOperatorSet = operators.get(newOperator);
+        if (newOperatorSet) {
+            newOperatorSet.push(tokenId)
+        } else {
+            operators.set(newOperator, [tokenId]);
+        }
+    }
+}
 
-    const newOperatorSet = operators.get(newOperator);
-    if (newOperatorSet) {
-        newOperatorSet.push(tokenId)
-    } else {
-        operators.set(newOperator, [tokenId]);
+function _updateOwnerCache(tokenId: nat, oldOwner?: Principal, newOwner?: Principal) {
+    if (oldOwner) {
+        const oldOwnerTokenIdentifiers = ownerList.get(oldOwner);
+        if (!oldOwnerTokenIdentifiers) {
+            throw "couldn't find owner";
+        }
+        const cleanedTokens = oldOwnerTokenIdentifiers.filter(x => x!== tokenId);
+        if (cleanedTokens.length === 0) {
+            ownerList.delete(oldOwner);
+        } else {
+            ownerList.set(oldOwner, cleanedTokens);
+        }
+    }
+    if (newOwner) {
+        const newOwnerTokenIdentifier = ownerList.get(newOwner);
+        if (!newOwnerTokenIdentifier) {
+            ownerList.set(newOwner, [tokenId]);
+        } else {
+            newOwnerTokenIdentifier.push(tokenId);
+        }
     }
 }
 
@@ -442,6 +530,14 @@ function _approve(to: Principal, tokenId: nat, newOperator?: Opt<Principal>) {
     tokens.set(tokenId, token);
 }
 
+function _transfer(from: Principal, to: Principal, tokenId: nat) {
+    const token = tokens.get(tokenId);
+    token.owner = to;
+    token.transferred_by = from;
+    token.transferred_at = ic.time();
+    token.operator = null;
+}
+
 function _getApproved(tokenId : nat) : Principal {
     isTrue(_exists(tokenId), "token id does not exist for _getApproved");
 
@@ -469,14 +565,7 @@ function _exists(tokenId: nat): boolean {
     return ownerList.has(tokenId);
 }
 
-function _transfer(from: Principal, to: Principal, tokenId: nat) {
-    isTrue(_exists(tokenId), "token id does not exist for _transfer");
-    isEqual(_ownerOf(tokenId), from, "trying to transfer a token they do not own");
-    _removeApprove(tokenId);
-    _decrementBalance(from);
-    _incrementBalance(to);
-    ownerList.set(tokenId, to);
-}
+
 
 function _removeApprove(tokenId: nat) {
     tokenApprovals.delete(tokenId);

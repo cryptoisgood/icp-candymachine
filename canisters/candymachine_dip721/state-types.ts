@@ -24,7 +24,9 @@ export type TxEvent = Variant<{
 export type TxDetails = Variant<{
     operator?: Principal
     token_identifier?: nat
-    is_approved?: boolean
+    is_approved?: boolean,
+    owner?: Principal,
+    to?: Principal
 }>;
 
 export type Metadata = Variant<{
