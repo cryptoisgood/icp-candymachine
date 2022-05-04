@@ -1,43 +1,38 @@
-import {Stable, Variant, Principal, nat, Opt, int, int64, nat8, nat16, nat64} from "azle";
+import {Variant, Principal, nat, Opt} from "azle";
 
 // export type TokenId = nat;
 
-export type TokenIdToMetadata = Variant<{
-    tokenId?: nat;
-    tokenMetadata?: TokenMetadata;
-}>;
+export type TokenIdToMetadata = {
+    tokenId: nat;
+    tokenMetadata: TokenMetadata;
+};
 
-export type TokenIdPrincipal = Variant<{
-    principal?: Principal;
-    tokenIds?: nat[];
-}>;
-
-export type PrincipalNatVariant = Variant<{
-    principal?: Principal;
-    balance?: nat;
-}>;
+export type TokenIdPrincipal = {
+    principal: Principal
+    tokenIds: nat[]
+};
 
 export type propertyVariant = Variant<{
-    location?: string
-    contentType?: string
-    thumbnail?: string
+    location?: Opt<string>
+    contentType?: Opt<string>
+    thumbnail?: Opt<string>
 }>;
 
-export type TokenMetadata  = Variant<{
-    token_identifier: int64,
+export type TokenMetadata = Variant<{
+    token_identifier: nat,
     owner: Principal,
-    operator?: Principal,
+    operator?: Opt<Principal>,
     properties: propertyVariant[],
     is_burned: boolean,
-    minted_at: int64,
+    minted_at: nat,
     minted_by: Principal,
-    transferred_at?: int64,
-    transferred_by?: Principal,
-    approved_at?: int64,
-    approved_by?: Principal,
-    burned_at?: int64,
-    burned_by?: Principal
-}>
+    transferred_at?: Opt<nat>,
+    transferred_by?: Opt<Principal>,
+    approved_at?: Opt<nat>,
+    approved_by?: Opt<Principal>,
+    burned_at?: Opt<nat>,
+    burned_by?: Opt<Principal>
+}>;
 
 // http
 

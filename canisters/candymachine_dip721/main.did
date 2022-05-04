@@ -17,7 +17,24 @@ type DefiniteCanisterSettings = record {
     "freezing_threshold": nat;
 };
 
-type Metadata = variant { "custodians": vec principal; "logo": text; "name": text; "symbol": text };
+type TokenIdToMetadata = record {
+    "tokenId": nat;
+    "tokenMetadata": TokenMetadata;
+};
+
+type TokenIdPrincipal = record {
+    "principal": principal;
+    "tokenIds": vec nat;
+};
+
+type TxEvent = record {
+    "time": nat;
+    "caller": principal;
+    "operation": text;
+    "details": vec TxDetails;
+};
+
+type Metadata = variant { "custodians": opt vec principal; "logo": opt text; "name": opt text; "symbol": opt text };
 
 type NatResponseDto = variant { "Ok": opt nat; "Err": opt text };
 
@@ -29,19 +46,13 @@ type BoolResponseDto = variant { "Ok": opt bool; "Err": opt text };
 
 type Stats = variant { "total_transactions": nat; "total_supply": nat; "cycles": nat; "total_unique_holders": nat };
 
-type propertyVariant = variant { "location": text; "contentType": text; "thumbnail": text };
+type propertyVariant = variant { "location": opt text; "contentType": opt text; "thumbnail": opt text };
 
-type Ledger = variant { "tokensEntries": vec TokenIdToMetadata; "ownersEntries": vec TokenIdPrincipal; "operatorsEntries": vec TokenIdPrincipal; "txRecordsEntries": vec TxEvent };
+type Ledger = variant { "tokensEntries": opt vec TokenIdToMetadata; "ownersEntries": opt vec TokenIdPrincipal; "operatorsEntries": opt vec TokenIdPrincipal; "txRecordsEntries": opt vec TxEvent };
 
-type TokenMetadata = variant { "token_identifier": int64; "owner": principal; "operator": principal; "properties": vec propertyVariant; "is_burned": bool; "minted_at": int64; "minted_by": principal; "transferred_at": int64; "transferred_by": principal; "approved_at": int64; "approved_by": principal; "burned_at": int64; "burned_by": principal };
+type TokenMetadata = variant { "token_identifier": nat; "owner": principal; "operator": opt principal; "properties": vec propertyVariant; "is_burned": bool; "minted_at": nat; "minted_by": principal; "transferred_at": opt nat; "transferred_by": opt principal; "approved_at": opt nat; "approved_by": opt principal; "burned_at": opt nat; "burned_by": opt principal };
 
-type TokenIdToMetadata = variant { "tokenId": nat; "tokenMetadata": TokenMetadata };
-
-type TokenIdPrincipal = variant { "principal": principal; "tokenIds": vec nat };
-
-type TxEvent = variant { "time": nat64; "caller": principal; "operation": text; "details": vec TxDetails };
-
-type TxDetails = variant { "operator": principal; "token_identifier": nat; "is_approved": bool; "owner": principal; "to": principal };
+type TxDetails = variant { "operator": opt principal; "token_identifier": opt nat; "is_approved": opt bool; "owner": opt principal; "to": opt principal };
 
 type CanisterStatus = variant { "running": null; "stopping": null; "stopped": null };
 
