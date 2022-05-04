@@ -1,4 +1,17 @@
-import {CanisterResult, ic, Init, nat, Opt, PostUpgrade, PreUpgrade, Principal, Query, Update, UpdateAsync} from 'azle';
+import {
+    CanisterResult,
+    ic,
+    Init,
+    int,
+    nat, nat32,
+    Opt,
+    PostUpgrade,
+    PreUpgrade,
+    Principal,
+    Query,
+    Update,
+    UpdateAsync
+} from 'azle';
 import {propertyVariant, TokenIdPrincipal, TokenIdToMetadata, TokenMetadata} from "./types";
 import {CanisterStatusResult, Management} from 'azle/canisters/management';
 import {
@@ -7,11 +20,17 @@ import {
     OwnerNotFound,
     SelfApprove,
     SelfTransfer,
-    TokenNotFound, UnauthorizedOperator,
+    TokenNotFound, TxNotFound, UnauthorizedOperator,
     UnauthorizedOwner
 } from "./constants";
 import {Metadata, StableStorage, Stats, TxDetails, TxEvent} from "./state-types";
-import {BoolResponseDto, NatResponseDto, PrincipalResponseDto, TokenMetadataResponseDto} from "./response-type";
+import {
+    BoolResponseDto,
+    NatResponseDto,
+    PrincipalResponseDto,
+    TokenMetadataResponseDto,
+    TxEventResponseDto
+} from "./response-type";
 
 const tokens = new Map<nat, TokenMetadata>();
 
@@ -116,6 +135,14 @@ export function setCustodians(custodians: Principal[]): Update<void> {
     metadataObj.custodians = custodians
 }
 
+export function totalTransactions(): Query<nat32> {
+    return txRecords.length;
+}
+
+export function totalSupply(): Query<nat32> {
+    return tokens.size
+}
+
 export function* cycles(): UpdateAsync<Opt<nat>> {
     const canisterStatusResult: CanisterResult<CanisterStatusResult> = yield ManagementCanister.canister_status({
         canister_id: ic.id()
@@ -217,6 +244,24 @@ export function isApprovedForAll(owner : Principal, operator : Principal): Query
         return {
             Err: e
         }
+    }
+}
+
+export function transaction(index: nat32): Query<TxEventResponseDto> {
+    const chosenIndex = index - 1;
+
+    if (chosenIndex < 0) {
+        return {
+            Err: TxNotFound
+        }
+    } else if (chosenIndex > txRecords.length) {
+        return {
+            Err: TxNotFound
+        }
+    }
+
+    return {
+        Ok: txRecords[chosenIndex]
     }
 }
 

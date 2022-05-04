@@ -1,5 +1,6 @@
 import {nat, Opt, Principal, Variant} from "azle";
 import {TokenMetadata} from "./types";
+import {TxEvent} from "./state-types";
 
 export type TokenMetadataResponseDto = Variant<{
     Ok?: Opt<TokenMetadata>,
@@ -23,5 +24,10 @@ export type PrincipalResponseDto = Variant<{
 
 export type BoolResponseDto = Variant<{
     Ok?: Opt<boolean>,
+    Err?: Opt<string>
+}>;
+
+export type TxEventResponseDto = Variant<{
+    Ok?: Opt<TxEvent>,
     Err?: Opt<string>
 }>;
