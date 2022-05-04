@@ -1,7 +1,8 @@
 import {CanisterResult, ic, Init, nat, Opt, PostUpgrade, PreUpgrade, Principal, Query, Update, UpdateAsync} from 'azle';
-import {TokenIdPrincipal, TokenIdToMetadata, TokenMetadata} from "./types";
+import {propertyVariant, TokenIdPrincipal, TokenIdToMetadata, TokenMetadata} from "./types";
 import {CanisterStatusResult, Management} from 'azle/canisters/management';
 import {
+    ExistedNFT,
     OperatorNotFound,
     OwnerNotFound,
     SelfApprove,
@@ -392,20 +393,19 @@ export function transferFrom(from : Principal, to : Principal, tokenId : nat): U
     }
 }
 
-export function mint(uri: string): Update<nat> {
+export function mint(to: Principal, tokenId: nat, properties: propertyVariant[]): Update<NatResponseDto> {
     const caller = ic.caller();
-    const stableMemory = ic.stableStorage<StableStorage>();
-    const custodians = stableMemory.metadata.custodians;
-    isTrue(custodians.includes(caller), "only admins can run this method");
-    stableMemory.tokenPk += 1n;
-    const token = ic.stableStorage<StableStorage>().tokenPk;
-    _mint(caller, token, {
-        token_identifier: token,
+    _isCanisterCustodian()
+    if (tokens.has(tokenId)) {
+        return {
+            Err: ExistedNFT
+        }
+    }
+    _addTokenMetadata(tokenId, {
+        token_identifier: tokenId,
         owner: caller,
         operator: null,
-        properties: [
-            {"location": uri}
-        ],
+        properties,
         is_burned: false,
         minted_at: BigInt(Date.now()),
         minted_by: caller,
@@ -416,7 +416,34 @@ export function mint(uri: string): Update<nat> {
         burned_at: null,
         burned_by: null,
     });
-    return token;
+    _updateOwnerCache(tokenId, undefined, to);
+
+    return {
+        Ok:_addTransaction(caller, "mint", [
+            {to: to},
+            {token_identifier: tokenId}
+        ])
+    };
+}
+
+export function burn(tokenId: nat): Update<NatResponseDto> {
+    const caller = ic.caller();
+    const token = tokens.get(tokenId);
+    if (caller != token.owner) {
+        return {
+            Err: UnauthorizedOwner
+        }
+    }
+
+    const operator = token.operator;
+    _updateOwnerCache(tokenId, token.owner);
+    _updateOperatorCache(tokenId, operator);
+    return {
+        Ok: _addTransaction(caller, "burn", [
+            {token_identifier: tokenId}
+        ])
+    }
+
 }
 
 
@@ -538,61 +565,7 @@ function _transfer(from: Principal, to: Principal, tokenId: nat) {
     token.operator = null;
 }
 
-function _getApproved(tokenId : nat) : Principal {
-    isTrue(_exists(tokenId), "token id does not exist for _getApproved");
-
-    if (tokenApprovals.has(tokenId)) {
-        return tokenApprovals.get(tokenId);
-    }
-
-    return;
-}
-
-function _hasApprovedAndSame(tokenId: nat, spender : Principal) : boolean {
-    const v = _getApproved(tokenId);
-    return v && v === spender;
-}
-
-function _isApprovedOrOwner(spender: Principal, tokenId: nat) : boolean {
-    isTrue(_exists(tokenId), "token id does not exist for _isApprovedOrOwner");
-    const owner = _ownerOf(tokenId);
-    return spender === owner ||
-        _hasApprovedAndSame(tokenId, spender) ||
-        _isApprovedForAll(owner, spender);
-}
-
-function _exists(tokenId: nat): boolean {
-    return ownerList.has(tokenId);
-}
-
-
-
-function _removeApprove(tokenId: nat) {
-    tokenApprovals.delete(tokenId);
-}
-
-function _decrementBalance(address: Principal) {
-    if (balances.has(address)) {
-        const v = balances.get(address);
-        if (v > 0) balances.set(address, v - 1n);
-    } else {
-        balances.set(address, 0n);
-    }
-}
-
-function _incrementBalance(address: Principal) {
-    if (balances.has(address)) {
-        const v = balances.get(address);
-        balances.set(address, v + 1n);
-    } else {
-        balances.set(address, 0n);
-    }
-}
-
-function _mint(to: Principal, tokenId: nat, metadata: TokenMetadata) {
-    isFalse(_exists(tokenId), "token id does not exist and can't be minted");
-    _incrementBalance(to);
-    ownerList.set(tokenId, to);
+function _addTokenMetadata(tokenId: nat, metadata: TokenMetadata) {
     tokens.set(tokenId, metadata);
 }
 
