@@ -1,10 +1,3 @@
-type Metadata = record {
-    "custodians": vec principal;
-    "logo": text;
-    "name": text;
-    "symbol": text;
-};
-
 type CanisterStatusArgs = record {
     "canister_id": principal;
 };
@@ -24,37 +17,59 @@ type DefiniteCanisterSettings = record {
     "freezing_threshold": nat;
 };
 
-type ResponseDto = variant { "Ok": opt TokenMetadata; "Err": opt text };
+type Metadata = variant { "custodians": vec principal; "logo": text; "name": text; "symbol": text };
+
+type NatResponseDto = variant { "Ok": opt nat; "Err": opt text };
+
+type PrincipalResponseDto = variant { "Ok": opt principal; "Err": opt text };
+
+type TokenMetadataResponseDto = variant { "Ok": opt TokenMetadata; "Err": opt text };
+
+type BoolResponseDto = variant { "Ok": opt bool; "Err": opt text };
+
+type Stats = variant { "total_transactions": nat; "total_supply": nat; "cycles": nat; "total_unique_holders": nat };
+
+type propertyVariant = variant { "location": text; "contentType": text; "thumbnail": text };
+
+type Ledger = variant { "tokensEntries": vec TokenIdToMetadata; "ownersEntries": vec TokenIdPrincipal; "operatorsEntries": vec TokenIdPrincipal; "txRecordsEntries": vec TxEvent };
+
+type TokenMetadata = variant { "token_identifier": int64; "owner": principal; "operator": principal; "properties": vec propertyVariant; "is_burned": bool; "minted_at": int64; "minted_by": principal; "transferred_at": int64; "transferred_by": principal; "approved_at": int64; "approved_by": principal; "burned_at": int64; "burned_by": principal };
 
 type TokenIdToMetadata = variant { "tokenId": nat; "tokenMetadata": TokenMetadata };
 
-type TokenIdPrincipal = variant { "tokenId": nat; "principal": principal };
+type TokenIdPrincipal = variant { "principal": principal; "tokenIds": vec nat };
 
-type PrincipalNatVariant = variant { "principal": principal; "balance": nat };
+type TxEvent = variant { "time": nat64; "caller": principal; "operation": text; "details": vec TxDetails };
 
-type OperatorApprovalVariant = variant { "principal": principal; "principals": vec principal };
-
-type TokenMetadata = variant { "token_identifier": int64; "owner": principal; "operator": principal; "properties": vec locationVariant; "is_burned": bool; "minted_at": int64; "minted_by": principal; "transferred_at": int64; "transferred_by": principal; "approved_at": int64; "approved_by": principal; "burned_at": int64; "burned_by": principal };
-
-type locationVariant = variant { "location": text };
+type TxDetails = variant { "operator": principal; "token_identifier": nat; "is_approved": bool; "owner": principal; "to": principal };
 
 type CanisterStatus = variant { "running": null; "stopping": null; "stopped": null };
 
 service: () -> {
-    "balanceOf": (principal) -> (opt nat) query;
-    "ownerOf": (nat) -> (opt principal) query;
     "metadata": () -> (Metadata) query;
     "name": () -> (text) query;
     "symbol": () -> (text) query;
     "logo": () -> (text) query;
     "custodians": () -> (vec principal) query;
     "totalUniqueHolders": () -> (opt nat) query;
-    "isApprovedForAll": (principal, principal) -> (bool) query;
-    "tokenMetadata": (nat) -> (ResponseDto) query;
+    "supportedInterfaces": () -> (vec text) query;
+    "balanceOf": (principal) -> (NatResponseDto) query;
+    "ownerOf": (nat) -> (PrincipalResponseDto) query;
+    "operatorOf": (nat) -> (PrincipalResponseDto) query;
+    "ownerTokenMetadata": (principal) -> (PrincipalResponseDto) query;
+    "operatorTokenIdentifiers": (principal) -> (PrincipalResponseDto) query;
+    "tokenMetadata": (nat) -> (TokenMetadataResponseDto) query;
+    "isApprovedForAll": (principal, principal) -> (BoolResponseDto) query;
+    "setName": (text) -> ();
+    "setLogo": (text) -> ();
+    "setSymbol": (text) -> ();
+    "setCustodians": (vec principal) -> ();
     "cycles": () -> (opt nat);
-    "approve": (principal, nat) -> ();
-    "getApproved": (nat) -> (principal);
-    "setApprovalForAll": (principal, bool) -> ();
-    "transferFrom": (principal, principal, nat) -> ();
-    "mint": (text) -> (nat);
+    "stats": () -> (Stats);
+    "approve": (principal, nat) -> (NatResponseDto);
+    "setApprovalForAll": (principal, bool) -> (NatResponseDto);
+    "transfer": (principal, nat) -> (NatResponseDto);
+    "transferFrom": (principal, principal, nat) -> (NatResponseDto);
+    "mint": (principal, nat, vec propertyVariant) -> (NatResponseDto);
+    "burn": (nat) -> (NatResponseDto);
 }

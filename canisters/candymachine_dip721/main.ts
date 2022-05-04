@@ -1,122 +1,148 @@
 import {CanisterResult, ic, Init, nat, Opt, PostUpgrade, PreUpgrade, Principal, Query, Update, UpdateAsync} from 'azle';
-import {
-    Metadata,
-    PrincipalNatVariant,
-    ResponseDto,
-    StableStorage,
-    TokenIdPrincipal,
-    TokenIdToMetadata,
-    TokenMetadata
-} from "./types";
-import {isEqual, isFalse, isTrue, notEqual} from "./safeAssert";
+import {propertyVariant, TokenIdPrincipal, TokenIdToMetadata, TokenMetadata} from "./types";
 import {CanisterStatusResult, Management} from 'azle/canisters/management';
-import {TokenNotFound} from "./constants";
+import {
+    ExistedNFT,
+    OperatorNotFound,
+    OwnerNotFound,
+    SelfApprove,
+    SelfTransfer,
+    TokenNotFound, UnauthorizedOperator,
+    UnauthorizedOwner
+} from "./constants";
+import {Metadata, StableStorage, Stats, TxDetails, TxEvent} from "./state-types";
+import {BoolResponseDto, NatResponseDto, PrincipalResponseDto, TokenMetadataResponseDto} from "./response-type";
 
-const _metadata: Metadata = {
+const tokens = new Map<nat, TokenMetadata>();
+const ownerList = new Map<Principal, nat[]>();
+const operators = new Map<Principal, nat[]>();
+const txRecords: TxEvent[] = []
+let metadataObj: Metadata = {
     name: "SampleNft",
     symbol: "SNFT",
-    logo: "",
-    custodians: []
-}
+    logo: "http://127.0.0.1:8000/TechisGood.png?canisterId=ryjl3-tyaaa-aaaaa-aaaba-cai",
+    custodians: [ic.id(), "rwlgt-iiaaa-aaaaa-aaaaa-cai", "rrkah-fqaaa-aaaaa-aaaaq-cai"]
+};
 
-const whiteList = new Set<Principal>()
-const tokens  = new Map<nat, TokenMetadata>();
-const owners  = new Map<nat, Principal>();
-const balances  = new Map<Principal, nat>();
-const tokenApprovals  = new Map<nat, Principal>();
-const operatorApprovals  = new Map<Principal, Principal[]>();
 export const ManagementCanister = ic.canisters.Management<Management>('aaaaa-aa');
 
 export function init(): Init {
     ic.stableStorage<StableStorage>().tokenPk = 0n;
-    ic.stableStorage<StableStorage>().tokens = [];
-    ic.stableStorage<StableStorage>().ownersEntries = [];
-    ic.stableStorage<StableStorage>().balancesEntries = [];
-    ic.stableStorage<StableStorage>().tokenApprovalsEntries = [];
-    ic.stableStorage<StableStorage>().operatorApprovalsEntries = [];
+    ic.stableStorage<StableStorage>().ledger = {
+        tokensEntries: [],
+        ownersEntries: [],
+        operatorsEntries: [],
+        txRecordsEntries: []
+    }
 }
 
 export function preUpgrade(): PreUpgrade {
-    ic.stableStorage<StableStorage>().tokens =
+    const ledger = {
+        tokensEntries: [],
+        ownersEntries: [],
+        operatorsEntries: [],
+        txRecordsEntries: []
+    };
+
+    ledger.tokensEntries =
         _mapToArray<nat, TokenMetadata>(tokens, (key, val) => {
             return {tokenId: key, tokenMetadata: val} as TokenIdToMetadata;
         } );
 
-    ic.stableStorage<StableStorage>().ownersEntries =
-        _mapToArray<nat, Principal>(owners, (key, val) => {
-            return {tokenId: key, principal: val} as TokenIdPrincipal;
+    ledger.ownersEntries =
+        _mapToArray<Principal, nat[]>(ownerList, (key, val) => {
+            return {principal: key, tokenIds: val} as TokenIdPrincipal;
         });
 
-    ic.stableStorage<StableStorage>().balancesEntries =
-        _mapToArray<Principal, nat>(balances, (key, val) => {
-            return {principal: key, balance: val} as PrincipalNatVariant;
+    ledger.operatorsEntries =
+        _mapToArray<Principal, nat[]>(operators, (key, val) => {
+            return {principal: key, tokenIds: val} as TokenIdPrincipal;
         });
 
-    ic.stableStorage<StableStorage>().tokenApprovalsEntries =
-        _mapToArray<nat, Principal>(tokenApprovals, (key, val) => {
-            return {tokenId: key, principal: val} as TokenIdPrincipal;
-        });
+    ledger.txRecordsEntries = [...txRecords]
 
-    ic.stableStorage<StableStorage>().operatorApprovalsEntries =
-        _mapToArray<Principal, Principal[]>(operatorApprovals, (key, val) => {
-            return {Principal: key, principals: val} as TokenIdPrincipal;
-        });
+    ic.stableStorage<StableStorage>().ledger = ledger;
+    ic.stableStorage<StableStorage>().metadata = metadataObj;
 }
 
 export function postUpgrade(): PostUpgrade {
-    for (let tokenURIEntry of ic.stableStorage<StableStorage>().tokens) {
+    const ledger = ic.stableStorage<StableStorage>().ledger;
+    for (let tokenURIEntry of ledger.tokensEntries) {
         tokens.set(tokenURIEntry.tokenId, tokenURIEntry.tokenMetadata);
     }
 
-    for (let ownersEntry of ic.stableStorage<StableStorage>().ownersEntries) {
-        owners.set(ownersEntry.tokenId, ownersEntry.principal);
+    for (let ownersEntry of ledger.ownersEntries) {
+        ownerList.set(ownersEntry.principal, ownersEntry.tokenIds);
     }
 
-    for (let balancesEntry of ic.stableStorage<StableStorage>().balancesEntries) {
-        balances.set(balancesEntry.principal, balancesEntry.balance);
+    for (let operatorEntries of ledger.operatorsEntries) {
+        operators.set(operatorEntries.principal, operatorEntries.tokenIds);
     }
 
-    for (let tokenApprovalsEntry of ic.stableStorage<StableStorage>().tokenApprovalsEntries) {
-        tokenApprovals.set(tokenApprovalsEntry.tokenId, tokenApprovalsEntry.principal)
+    for (let txRecordsEntry of ledger.txRecordsEntries) {
+        txRecords.push(txRecordsEntry);
     }
-
-    for (let operatorApprovalsEntry of ic.stableStorage<StableStorage>().operatorApprovalsEntries) {
-        operatorApprovals.set(operatorApprovalsEntry.principal, operatorApprovalsEntry.principals);
+    metadataObj = ic.stableStorage<StableStorage>().metadata;
+    ic.stableStorage<StableStorage>().ledger = {
+        tokensEntries: [],
+        ownersEntries: [],
+        operatorsEntries: [],
+        txRecordsEntries: []
     }
-
-    ic.stableStorage<StableStorage>().tokens = [];
-    ic.stableStorage<StableStorage>().ownersEntries = [];
-    ic.stableStorage<StableStorage>().balancesEntries = [];
-    ic.stableStorage<StableStorage>().tokenApprovalsEntries = [];
-    ic.stableStorage<StableStorage>().operatorApprovalsEntries = [];
+    delete ic.stableStorage<StableStorage>().metadata;
 }
 
-export function balanceOf(p: Principal): Query<Opt<nat>> {
-    return balances.get(p);
-}
+// export function http_request(req: HttpRequest): Query<HttpResponseDto> {
+//     return {
+//         Ok: {
+//             upgrade: false,
+//             status_code: 200,
+//             headers: [],
+//             body: Array.from(toUTF8Array("abc")),
+//             streamingStrategy: null
+//         }
+//     }
+// }
 
-export function ownerOf(tokenId: nat): Query<Opt<Principal>> {
-    return _ownerOf(tokenId);
-}
 
 export function metadata(): Query<Metadata> {
-    return _metadata;
+    return metadataObj;
 }
 
 export function name() : Query<string> {
-    return _metadata.name;
+    return metadataObj.name;
 }
 
 export function symbol() : Query<string> {
-    return _metadata.symbol;
+    return metadataObj.symbol;
 }
 
 export function logo(): Query<string> {
-    return _metadata.logo;
+    return metadataObj.logo;
 }
 
 export function custodians(): Query<Principal[]> {
-    return _metadata.custodians;
+    return metadataObj.custodians;
+}
+
+export function setName(name: string): Update<void> {
+    _isCanisterCustodian();
+    metadataObj.name = name;
+}
+
+export function setLogo(logo: string): Update<void> {
+    _isCanisterCustodian();
+    metadataObj.logo = logo;
+}
+
+export function setSymbol(symbol: string): Update<void> {
+    _isCanisterCustodian();
+    metadataObj.symbol = symbol;
+}
+
+export function setCustodians(custodians: Principal[]): Update<void> {
+    _isCanisterCustodian();
+    metadataObj.custodians = custodians
 }
 
 export function* cycles(): UpdateAsync<Opt<nat>> {
@@ -131,92 +157,76 @@ export function* cycles(): UpdateAsync<Opt<nat>> {
 }
 
 export function totalUniqueHolders(): Query<Opt<nat>> {
-    return tokens.size ? BigInt(tokens.size) : null;
+    return _totalUniqueHolders();
 }
 
-export function isApprovedForAll(owner : Principal, operator : Principal): Query<boolean> {
-    return _isApprovedForAll(owner, operator);
-}
-
-export function approve(to : Principal, tokenId : nat) : Update<void>{
-    const caller = ic.caller();
-    const owner = _ownerOf(tokenId);
-    if (!owner) {
-        ic.trap("No owner for token");
-    }
-
-    if (owner === to && owner == caller && _isApprovedForAll(owner, caller)) {
-        _approve(to, tokenId);
-    }
-}
-
-export function getApproved(tokenId: nat): Update<Principal> {
-    const appr = _getApproved(tokenId);
-    if (appr) {
-        return appr;
-    }
-
-    ic.trap("None Approved");
-}
-
-export function setApprovalForAll(op : Principal, isApproved : boolean): Update<void> {
-    const caller = ic.caller();
-    notEqual(caller, op, "caller not equal to op in set approval for all");
-
-    if (isApproved) {
-        if (operatorApprovals.has(caller)) {
-            const opList = operatorApprovals.get(caller).filter((x) =>
-                x != op
-            );
-            opList.push(op);
-            operatorApprovals.set(caller, opList);
-        } else {
-            operatorApprovals.set(caller, [op]);
-        }
-    } else {
-        if (operatorApprovals.has(caller)) {
-            const opList = operatorApprovals.get(caller).filter((x) =>
-                x != op
-            );
-            operatorApprovals.set(caller, opList);
-        } else {
-            operatorApprovals.set(caller, []);
-        }
-    }
-}
-
-export function transferFrom(from : Principal, to : Principal, tokenId : nat): Update<void> {
-    const caller = ic.caller();
-    isTrue(_isApprovedOrOwner(caller, tokenId), "transfer from is not approved or owner");
-    _transfer(from, to, tokenId);
-}
-
-export function mint(uri: string): Update<nat> {
-    ic.stableStorage<StableStorage>().tokenPk += 1n;
-    const token = ic.stableStorage<StableStorage>().tokenPk;
-    const caller = ic.caller();
-    _mint(caller, token, {
-        token_identifier: token,
-        owner: caller,
-        operator: null,
-        properties: [
-            {"location": uri}
-        ],
-        is_burned: false,
-        minted_at: BigInt(Date.now()),
-        minted_by: caller,
-        transferred_at: null,
-        transferred_by: null,
-        approved_at: null,
-        approved_by: null,
-        burned_at: null,
-        burned_by: null,
+export function* stats(): UpdateAsync<Stats> {
+    const canisterStatusResult: CanisterResult<CanisterStatusResult> = yield ManagementCanister.canister_status({
+        canister_id: ic.id()
     });
-    return token;
+    return {
+        total_transactions: _totalTransaction(),
+        total_supply: _totalSupply(),
+        cycles: canisterStatusResult.ok.cycles,
+        total_unique_holders: totalUniqueHolders()
+    }
 }
 
-export function tokenMetadata(tokenId: nat): Query<ResponseDto> {
-    if (_exists(tokenId)) {
+export function supportedInterfaces(): Query<string[]> {
+    return ["Approval", "Mint", "Burn", "TransactionHistory"];
+}
+
+export function balanceOf(p: Principal): Query<NatResponseDto> {
+    const owner = ownerList.get(p);
+    return owner ?
+        {
+            Ok: BigInt(owner.length)
+        } :
+        {
+            Err: OwnerNotFound
+        };
+}
+
+export function ownerOf(tokenId: nat): Query<PrincipalResponseDto> {
+    const token = tokens.get(tokenId);
+    return token ?
+        {
+            Ok: token.owner
+        } :
+        {
+            Err: OwnerNotFound
+        };
+}
+
+export function operatorOf(tokenId: nat): Query<PrincipalResponseDto> {
+    const ope = _operatorOf(tokenId);
+    return ope.length === 0 ? {
+        Err: OperatorNotFound
+    } : {
+        Ok: ope
+    }
+}
+
+export function ownerTokenMetadata(owner: Principal): Query<PrincipalResponseDto> {
+    const meta = _getOwnersTokenMetadata(owner);
+    return meta.length === 0 ? {
+        Err: TokenNotFound
+    } : {
+        Ok: meta[0].owner
+    };
+}
+
+export function operatorTokenIdentifiers(owner: Principal): Query<PrincipalResponseDto> {
+    const meta = _getOwnersTokenMetadata(owner);
+    return meta.length === 0 ? {
+        Err: TokenNotFound
+    } : {
+        Ok: meta[0].operator
+    };
+}
+
+export function tokenMetadata(tokenId: nat): Query<TokenMetadataResponseDto> {
+    if (tokens.has(tokenId)) {
         return {
             Ok: tokens.get(tokenId)
         }
@@ -227,91 +237,335 @@ export function tokenMetadata(tokenId: nat): Query<ResponseDto> {
     }
 }
 
-// private
-
-function _ownerOf(tokenId : nat) : Principal {
-    return owners.get(tokenId);
-}
-
-function _isApprovedForAll(owner : Principal, operator : Principal) : boolean {
-    if (operatorApprovals.get(owner)) {
-        if (whiteList.has(operator)) {
-            for (let allow of whiteList.values()) {
-                if (allow === operator) {
-                    return true;
-                }
-            }
+export function isApprovedForAll(owner : Principal, operator : Principal): Query<BoolResponseDto> {
+    try {
+        return {
+            Ok: _isApprovedForAll(owner, operator)
+        }
+    }catch (e) {
+        return {
+            Err: e
         }
     }
-    return false;
 }
 
-function _approve(to: Principal, tokenId: nat) {
-    tokenApprovals.set(tokenId, to);
-}
-
-function _getApproved(tokenId : nat) : Principal {
-    isTrue(_exists(tokenId), "token id does not exist for _getApproved");
-
-    if (tokenApprovals.has(tokenId)) {
-        return tokenApprovals.get(tokenId);
+export function approve(approvedBy : Principal, tokenId : nat) : Update<NatResponseDto>{
+    const caller = ic.caller();
+    if (caller === approvedBy) {
+        return {
+            Err: SelfApprove
+        };
     }
 
-    return;
+    const owners = ownerList.get(approvedBy);
+    if (!owners && owners.length > 0) {
+        return {
+            Err: OwnerNotFound
+        }
+    }
+
+    const token = tokens.get(tokenId);
+    if (!token) {
+        return {
+            Err: TokenNotFound
+        }
+    }
+
+    const owner = token.owner;
+    if (owner !== caller) {
+        return {
+          Err: UnauthorizedOwner
+        };
+    }
+    const tokenOperator = _operatorOf(tokenId);
+    try {
+        _updateOperatorCache(tokenId, tokenOperator, approvedBy);
+    }catch (e) {
+        return {
+            Err: e
+        };
+    }
+
+
+    _approve(approvedBy, tokenId, caller);
+    const transaction = _addTransaction(caller, "approve", [
+        {operator: caller},
+        {token_identifier: tokenId}
+    ]);
+
+    return {
+        Ok: transaction
+    };
+
 }
 
-function _hasApprovedAndSame(tokenId: nat, spender : Principal) : boolean {
-    const v = _getApproved(tokenId);
-    return v && v === spender;
+export function setApprovalForAll(op : Principal, isApproved : boolean): Update<NatResponseDto> {
+    const caller = ic.caller();
+    if (caller === op) {
+        return {
+            Err: SelfApprove
+        };
+    }
+
+    const tokMeta: TokenMetadata[] = _getOwnersTokenMetadata(caller);
+    for (let tokenMetadatum of tokMeta) {
+        const operator = tokenMetadatum.operator;
+        const newOperator = isApproved ? op : null;
+        _updateOperatorCache(tokenMetadatum.token_identifier, operator, newOperator);
+        _approve(caller, tokenMetadatum.token_identifier, newOperator);
+    }
+
+    return {
+        Ok: _addTransaction(caller, "setApprovalForAll", [
+            {operator: op},
+            {is_approved: isApproved}
+        ])
+    }
 }
 
-function _isApprovedOrOwner(spender: Principal, tokenId: nat) : boolean {
-    isTrue(_exists(tokenId), "token id does not exist for _isApprovedOrOwner");
-    const owner = _ownerOf(tokenId);
-    return spender === owner ||
-        _hasApprovedAndSame(tokenId, spender) ||
-        _isApprovedForAll(owner, spender);
+export function transfer(to: Principal, tokenId : nat): Update<NatResponseDto> {
+    const caller = ic.caller();
+
+    if (caller === to) {
+        return {
+            Err: SelfTransfer
+        }
+    }
+
+    const token = tokens.get(tokenId);
+    if (!token) {
+        return {
+            Err: TokenNotFound
+        }
+    }
+    const oldOwner = token.owner;
+    const oldOperator = token.operator;
+    _updateOwnerCache(tokenId, oldOwner, to);
+    _updateOperatorCache(tokenId, oldOperator);
+    _transfer(oldOwner, to, tokenId);
+
+    return {
+        Ok: _addTransaction(caller, "transfer", [
+            {owner: caller},
+            {to: to},
+            {token_identifier: tokenId}
+        ])
+    }
 }
 
-function _exists(tokenId: nat): boolean {
-    return owners.has(tokenId);
+export function transferFrom(from : Principal, to : Principal, tokenId : nat): Update<NatResponseDto> {
+    const caller = ic.caller();
+    if (from === to) {
+        return {
+            Err: SelfTransfer
+        }
+    }
+    const token = tokens.get(tokenId);
+    if (!token) {
+        return {
+            Err: TokenNotFound
+        }
+    }
+    const oldOwner = token.owner;
+    const oldOperator = token.operator;
+
+    if (caller != oldOwner) {
+        return {
+            Err: UnauthorizedOwner
+        }
+    }
+
+    if (caller != oldOperator) {
+        return {
+            Err: UnauthorizedOperator
+        }
+    }
+    _updateOwnerCache(tokenId, oldOwner, to);
+    _updateOperatorCache(tokenId, oldOperator);
+    _transfer(caller, to, tokenId);
+
+    return {
+        Ok: _addTransaction(caller, "transfer", [
+            {owner: caller},
+            {to: to},
+            {token_identifier: tokenId}
+        ])
+    }
+}
+
+export function mint(to: Principal, tokenId: nat, properties: propertyVariant[]): Update<NatResponseDto> {
+    const caller = ic.caller();
+    _isCanisterCustodian()
+    if (tokens.has(tokenId)) {
+        return {
+            Err: ExistedNFT
+        }
+    }
+    _addTokenMetadata(tokenId, {
+        token_identifier: tokenId,
+        owner: caller,
+        operator: null,
+        properties,
+        is_burned: false,
+        minted_at: BigInt(Date.now()),
+        minted_by: caller,
+        transferred_at: null,
+        transferred_by: null,
+        approved_at: null,
+        approved_by: null,
+        burned_at: null,
+        burned_by: null,
+    });
+    _updateOwnerCache(tokenId, undefined, to);
+
+    return {
+        Ok:_addTransaction(caller, "mint", [
+            {to: to},
+            {token_identifier: tokenId}
+        ])
+    };
+}
+
+export function burn(tokenId: nat): Update<NatResponseDto> {
+    const caller = ic.caller();
+    const token = tokens.get(tokenId);
+    if (caller != token.owner) {
+        return {
+            Err: UnauthorizedOwner
+        }
+    }
+
+    const operator = token.operator;
+    _updateOwnerCache(tokenId, token.owner);
+    _updateOperatorCache(tokenId, operator);
+    return {
+        Ok: _addTransaction(caller, "burn", [
+            {token_identifier: tokenId}
+        ])
+    }
+
+}
+
+
+// private
+
+function _totalUniqueHolders() {
+    return ownerList.size ? BigInt(ownerList.size) : null;
+}
+
+function _totalTransaction(): nat {
+    return BigInt(txRecords.length);
+}
+
+function _totalSupply(): nat {
+    return BigInt(tokens.size)
+}
+
+function _isCanisterCustodian() {
+    const caller = ic.caller();
+    if (!metadataObj.custodians.includes(caller)) {
+        ic.trap("Caller is not an custodian of canister");
+    }
+}
+
+function _operatorOf(tokenId: nat): Principal | undefined {
+    return tokens.get(tokenId)?.operator
+}
+
+function _updateOperatorCache(tokenId: nat, oldOperator?: Principal, newOperator?: Principal) {
+    const oldOperatorTokenIdentifiers = operators.get(oldOperator);
+    if (!oldOperatorTokenIdentifiers || oldOperatorTokenIdentifiers.length === 0) {
+        throw OperatorNotFound;
+    }
+    if (oldOperator) {
+        const mutatedArr = oldOperatorTokenIdentifiers.filter(x => x !== tokenId);
+        if (mutatedArr.length === 0) {
+            operators.delete(oldOperator);
+        } else {
+            operators.set(oldOperator, mutatedArr);
+        }
+    }
+    if (newOperator) {
+        const newOperatorSet = operators.get(newOperator);
+        if (newOperatorSet) {
+            newOperatorSet.push(tokenId)
+        } else {
+            operators.set(newOperator, [tokenId]);
+        }
+    }
+}
+
+function _updateOwnerCache(tokenId: nat, oldOwner?: Principal, newOwner?: Principal) {
+    if (oldOwner) {
+        const oldOwnerTokenIdentifiers = ownerList.get(oldOwner);
+        if (!oldOwnerTokenIdentifiers) {
+            throw "couldn't find owner";
+        }
+        const cleanedTokens = oldOwnerTokenIdentifiers.filter(x => x!== tokenId);
+        if (cleanedTokens.length === 0) {
+            ownerList.delete(oldOwner);
+        } else {
+            ownerList.set(oldOwner, cleanedTokens);
+        }
+    }
+    if (newOwner) {
+        const newOwnerTokenIdentifier = ownerList.get(newOwner);
+        if (!newOwnerTokenIdentifier) {
+            ownerList.set(newOwner, [tokenId]);
+        } else {
+            newOwnerTokenIdentifier.push(tokenId);
+        }
+    }
+}
+
+function _addTransaction(caller: Principal, operation: string, details: TxDetails[]): nat {
+    txRecords.push({
+       time: ic.time(),
+       operation,
+       details,
+       caller
+    });
+
+    return BigInt(txRecords.length);
+}
+
+
+function _isApprovedForAll(owner : Principal, operator : Principal) : boolean {
+    const tokensMetadata = _getOwnersTokenMetadata(owner);
+    if (tokensMetadata) {
+        const approvedTokens = tokensMetadata.filter(x => x.operator === operator);
+        return approvedTokens.length === tokensMetadata.length;
+    } else {
+        throw TokenNotFound;
+    }
+}
+
+function _getOwnersTokenMetadata(owner: Principal): TokenMetadata[] {
+    const tokensOwned = ownerList.get(owner);
+    if (tokensOwned) {
+        return tokensOwned.map(x => tokens.get(x));
+    } else {
+        return [];
+    }
+}
+
+function _approve(to: Principal, tokenId: nat, newOperator?: Opt<Principal>) {
+    const token = tokens.get(tokenId);
+    token.approved_at = ic.time();
+    token.approved_by = to;
+    if (newOperator) token.operator = newOperator;
+    tokens.set(tokenId, token);
 }
 
 function _transfer(from: Principal, to: Principal, tokenId: nat) {
-    isTrue(_exists(tokenId), "token id does not exist for _transfer");
-    isEqual(_ownerOf(tokenId), from, "trying to transfer a token they do not own");
-    _removeApprove(tokenId);
-    _decrementBalance(from);
-    _incrementBalance(to);
-    owners.set(tokenId, to);
+    const token = tokens.get(tokenId);
+    token.owner = to;
+    token.transferred_by = from;
+    token.transferred_at = ic.time();
+    token.operator = null;
 }
 
-function _removeApprove(tokenId: nat) {
-    tokenApprovals.delete(tokenId);
-}
-
-function _decrementBalance(address: Principal) {
-    if (balances.has(address)) {
-        const v = balances.get(address);
-        if (v > 0) balances.set(address, v - 1n);
-    } else {
-        balances.set(address, 0n);
-    }
-}
-
-function _incrementBalance(address: Principal) {
-    if (balances.has(address)) {
-        const v = balances.get(address);
-        balances.set(address, v + 1n);
-    } else {
-        balances.set(address, 0n);
-    }
-}
-
-function _mint(to: Principal, tokenId: nat, metadata: TokenMetadata) {
-    isFalse(_exists(tokenId), "token id does not exist and can't be minted");
-    _incrementBalance(to);
-    owners.set(tokenId, to);
+function _addTokenMetadata(tokenId: nat, metadata: TokenMetadata) {
     tokens.set(tokenId, metadata);
 }
 
