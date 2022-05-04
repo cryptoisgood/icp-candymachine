@@ -6,12 +6,12 @@ export type StableStorage = Stable<{
     ledger?: Opt<Ledger>
 }>;
 
-export type Ledger = Variant<{
-    tokensEntries?: Opt<TokenIdToMetadata[]>
-    ownersEntries?: Opt<TokenIdPrincipal[]>
-    operatorsEntries?: Opt<TokenIdPrincipal[]>
-    txRecordsEntries?: Opt<TxEvent[]>
-}>;
+export type Ledger = {
+    tokensEntries: TokenIdToMetadata[],
+    ownersEntries: TokenIdPrincipal[],
+    operatorsEntries: TokenIdPrincipal[],
+    txRecordsEntries: TxEvent[]
+};
 
 export type TxEvent = {
     time: nat,
@@ -28,16 +28,15 @@ export type TxDetails = Variant<{
     to?: Opt<Principal>
 }>;
 
-export type Metadata = Variant<{
-    custodians?: Opt<Principal[]>
-    logo?: Opt<string>
-    name?: Opt<string>
-    symbol?: Opt<string>
-}>;
-
-export type Stats = Variant<{
+export type Metadata = {
+    custodians: Principal[],
+    logo: string,
+    name: string,
+    symbol: string
+};
+export type Stats = {
     total_transactions: nat,
     total_supply: nat,
     cycles: nat,
     total_unique_holders: nat
-}>;
+};

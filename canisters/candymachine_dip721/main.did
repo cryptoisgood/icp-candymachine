@@ -1,3 +1,17 @@
+type Metadata = record {
+    "custodians": vec principal;
+    "logo": text;
+    "name": text;
+    "symbol": text;
+};
+
+type Stats = record {
+    "total_transactions": nat;
+    "total_supply": nat;
+    "cycles": nat;
+    "total_unique_holders": nat;
+};
+
 type CanisterStatusArgs = record {
     "canister_id": principal;
 };
@@ -8,6 +22,13 @@ type CanisterStatusResult = record {
     "module_hash": opt vec nat8;
     "memory_size": nat;
     "cycles": nat;
+};
+
+type Ledger = record {
+    "tokensEntries": vec TokenIdToMetadata;
+    "ownersEntries": vec TokenIdPrincipal;
+    "operatorsEntries": vec TokenIdPrincipal;
+    "txRecordsEntries": vec TxEvent;
 };
 
 type DefiniteCanisterSettings = record {
@@ -22,6 +43,22 @@ type TokenIdToMetadata = record {
     "tokenMetadata": TokenMetadata;
 };
 
+type TokenMetadata = record {
+    "token_identifier": nat;
+    "owner": principal;
+    "operator": opt principal;
+    "properties": vec propertyVariant;
+    "is_burned": bool;
+    "minted_at": nat;
+    "minted_by": principal;
+    "transferred_at": opt nat;
+    "transferred_by": opt principal;
+    "approved_at": opt nat;
+    "approved_by": opt principal;
+    "burned_at": opt nat;
+    "burned_by": opt principal;
+};
+
 type TokenIdPrincipal = record {
     "principal": principal;
     "tokenIds": vec nat;
@@ -34,8 +71,6 @@ type TxEvent = record {
     "details": vec TxDetails;
 };
 
-type Metadata = variant { "custodians": opt vec principal; "logo": opt text; "name": opt text; "symbol": opt text };
-
 type NatResponseDto = variant { "Ok": opt nat; "Err": opt text };
 
 type PrincipalResponseDto = variant { "Ok": opt principal; "Err": opt text };
@@ -44,13 +79,9 @@ type TokenMetadataResponseDto = variant { "Ok": opt TokenMetadata; "Err": opt te
 
 type BoolResponseDto = variant { "Ok": opt bool; "Err": opt text };
 
-type Stats = variant { "total_transactions": nat; "total_supply": nat; "cycles": nat; "total_unique_holders": nat };
+type TxEventResponseDto = variant { "Ok": opt TxEvent; "Err": opt text };
 
 type propertyVariant = variant { "location": opt text; "contentType": opt text; "thumbnail": opt text };
-
-type Ledger = variant { "tokensEntries": opt vec TokenIdToMetadata; "ownersEntries": opt vec TokenIdPrincipal; "operatorsEntries": opt vec TokenIdPrincipal; "txRecordsEntries": opt vec TxEvent };
-
-type TokenMetadata = variant { "token_identifier": nat; "owner": principal; "operator": opt principal; "properties": vec propertyVariant; "is_burned": bool; "minted_at": nat; "minted_by": principal; "transferred_at": opt nat; "transferred_by": opt principal; "approved_at": opt nat; "approved_by": opt principal; "burned_at": opt nat; "burned_by": opt principal };
 
 type TxDetails = variant { "operator": opt principal; "token_identifier": opt nat; "is_approved": opt bool; "owner": opt principal; "to": opt principal };
 
@@ -62,6 +93,8 @@ service: () -> {
     "symbol": () -> (text) query;
     "logo": () -> (text) query;
     "custodians": () -> (vec principal) query;
+    "totalTransactions": () -> (nat32) query;
+    "totalSupply": () -> (nat32) query;
     "totalUniqueHolders": () -> (opt nat) query;
     "supportedInterfaces": () -> (vec text) query;
     "balanceOf": (principal) -> (NatResponseDto) query;
@@ -71,6 +104,7 @@ service: () -> {
     "operatorTokenIdentifiers": (principal) -> (PrincipalResponseDto) query;
     "tokenMetadata": (nat) -> (TokenMetadataResponseDto) query;
     "isApprovedForAll": (principal, principal) -> (BoolResponseDto) query;
+    "transaction": (nat32) -> (TxEventResponseDto) query;
     "setName": (text) -> ();
     "setLogo": (text) -> ();
     "setSymbol": (text) -> ();

@@ -2,8 +2,8 @@ import {
     CanisterResult,
     ic,
     Init,
-    int,
-    nat, nat32,
+    nat,
+    nat32,
     Opt,
     PostUpgrade,
     PreUpgrade,
@@ -20,7 +20,9 @@ import {
     OwnerNotFound,
     SelfApprove,
     SelfTransfer,
-    TokenNotFound, TxNotFound, UnauthorizedOperator,
+    TokenNotFound,
+    TxNotFound,
+    UnauthorizedOperator,
     UnauthorizedOwner
 } from "./constants";
 import {Metadata, StableStorage, Stats, TxDetails, TxEvent} from "./state-types";
@@ -37,43 +39,41 @@ const tokens = new Map<nat, TokenMetadata>();
 const ownerList = new Map<Principal, nat[]>();
 const operators = new Map<Principal, nat[]>();
 const txRecords: TxEvent[] = []
-const metadataObj: Metadata  = {};
 _loadFromState();
 export const ManagementCanister = ic.canisters.Management<Management>('aaaaa-aa');
 
 export function init(): Init {
-    metadataObj.name = "SampleNft";
-    metadataObj.symbol = "SNFT";
-    metadataObj.logo = "http://127.0.0.1:8000/TechisGood.png?canisterId=ryjl3-tyaaa-aaaaa-aaaba-cai";
-    metadataObj.custodians = [ic.id(), "2vxsx-fae"];
+    ic.print('init');
+
+    ic.stableStorage<StableStorage>().metadata = {
+        symbol: "SNFT",
+        name: "SampleNft",
+        logo: "http://127.0.0.1:8000/TechisGood.png?canisterId=ryjl3-tyaaa-aaaaa-aaaba-cai",
+        custodians: [ic.id(), "2vxsx-fae", "rrkah-fqaaa-aaaaa-aaaaq-cai"]
+    };
 }
 
 export function preUpgrade(): PreUpgrade {
-    ic.stableStorage<StableStorage>().ledger = {};
-    ic.stableStorage<StableStorage>().ledger.tokensEntries =
-        _mapToArray<nat, TokenMetadata>(tokens, (key, val) => {
-            return {tokenId: key, tokenMetadata: val} as TokenIdToMetadata;
-        } );
 
-    ic.stableStorage<StableStorage>().ledger.ownersEntries =
-        _mapToArray<Principal, nat[]>(ownerList, (key, val) => {
-            return {principal: key, tokenIds: val} as TokenIdPrincipal;
-        });
-
-    ic.stableStorage<StableStorage>().ledger.operatorsEntries =
-        _mapToArray<Principal, nat[]>(operators, (key, val) => {
-            return {principal: key, tokenIds: val} as TokenIdPrincipal;
-        });
-
-    ic.stableStorage<StableStorage>().ledger.txRecordsEntries = txRecords ? [...txRecords] : [];
-    ic.stableStorage<StableStorage>().metadata = {};
-    ic.stableStorage<StableStorage>().metadata.symbol = metadataObj.symbol;
-    ic.stableStorage<StableStorage>().metadata.name = metadataObj.name;
-    ic.stableStorage<StableStorage>().metadata.logo = metadataObj.logo;
-    ic.stableStorage<StableStorage>().metadata.custodians = metadataObj.custodians;
+    ic.stableStorage<StableStorage>().ledger = {
+        tokensEntries:
+            _mapToArray<nat, TokenMetadata>(tokens, (key, val) => {
+                return {tokenId: key, tokenMetadata: val} as TokenIdToMetadata;
+            } ),
+        ownersEntries:
+            _mapToArray<Principal, nat[]>(ownerList, (key, val) => {
+                return {principal: key, tokenIds: val} as TokenIdPrincipal;
+            }),
+        operatorsEntries:
+            _mapToArray<Principal, nat[]>(operators, (key, val) => {
+                return {principal: key, tokenIds: val} as TokenIdPrincipal;
+            }),
+        txRecordsEntries: txRecords ? [...txRecords] : []
+    }
 }
 
 export function postUpgrade(): PostUpgrade {
+
     ic.stableStorage<StableStorage>().ledger = {
         tokensEntries: [],
         ownersEntries: [],
@@ -96,43 +96,57 @@ export function postUpgrade(): PostUpgrade {
 
 
 export function metadata(): Query<Metadata> {
-    return metadataObj;
+    ic.print("call metadata");
+    const data = ic.stableStorage<StableStorage>().metadata;
+    ic.print(data.symbol);
+    ic.print(data.logo);
+    ic.print(data.name);
+    for (let custodian of data.custodians) {
+        ic.print(custodian);
+    }
+
+    return {
+        symbol: data.symbol,
+        logo: data.logo,
+        name: data.name,
+        custodians: data.custodians
+    }
 }
 
 export function name() : Query<string> {
-    return metadataObj.name;
+    return ic.stableStorage<StableStorage>().metadata.name;
 }
 
 export function symbol() : Query<string> {
-    return metadataObj.symbol;
+    return ic.stableStorage<StableStorage>().metadata.symbol;
 }
 
 export function logo(): Query<string> {
-    return metadataObj.logo;
+    return ic.stableStorage<StableStorage>().metadata.logo;
 }
 
 export function custodians(): Query<Principal[]> {
-    return metadataObj.custodians;
+    return ic.stableStorage<StableStorage>().metadata.custodians;
 }
 
 export function setName(name: string): Update<void> {
     _isCanisterCustodian();
-    metadataObj.name = name;
+    ic.stableStorage<StableStorage>().metadata.name = name;
 }
 
 export function setLogo(logo: string): Update<void> {
     _isCanisterCustodian();
-    metadataObj.logo = logo;
+    ic.stableStorage<StableStorage>().metadata.logo = logo;
 }
 
 export function setSymbol(symbol: string): Update<void> {
     _isCanisterCustodian();
-    metadataObj.symbol = symbol;
+    ic.stableStorage<StableStorage>().metadata.symbol = symbol;
 }
 
 export function setCustodians(custodians: Principal[]): Update<void> {
     _isCanisterCustodian();
-    metadataObj.custodians = custodians
+    ic.stableStorage<StableStorage>().metadata.custodians = custodians
 }
 
 export function totalTransactions(): Query<nat32> {
@@ -411,6 +425,7 @@ export function transferFrom(from : Principal, to : Principal, tokenId : nat): U
 
 export function mint(to: Principal, tokenId: nat, properties: propertyVariant[]): Update<NatResponseDto> {
     const caller = ic.caller();
+    ic.print(`mint called from ${caller}`);
     _isCanisterCustodian()
     if (tokens.has(tokenId)) {
         return {
@@ -423,7 +438,7 @@ export function mint(to: Principal, tokenId: nat, properties: propertyVariant[])
         operator: null,
         properties,
         is_burned: false,
-        minted_at: BigInt(Date.now()),
+        minted_at: _nowTime(),
         minted_by: caller,
         transferred_at: null,
         transferred_by: null,
@@ -479,7 +494,7 @@ function _totalSupply(): nat {
 
 function _isCanisterCustodian() {
     const caller = ic.caller();
-    if (!metadataObj.custodians.includes(caller)) {
+    if (!ic.stableStorage<StableStorage>().metadata.custodians.includes(caller)) {
         ic.trap("Caller is not an custodian of canister");
     }
 }
@@ -536,7 +551,7 @@ function _updateOwnerCache(tokenId: nat, oldOwner?: Principal, newOwner?: Princi
 
 function _addTransaction(caller: Principal, operation: string, details: TxDetails[]): nat {
     txRecords.push({
-       time: ic.time(),
+       time: _nowTime(),
        operation,
        details,
        caller
@@ -567,7 +582,7 @@ function _getOwnersTokenMetadata(owner: Principal): TokenMetadata[] {
 
 function _approve(to: Principal, tokenId: nat, newOperator?: Opt<Principal>) {
     const token = tokens.get(tokenId);
-    token.approved_at = ic.time();
+    token.approved_at = _nowTime();
     token.approved_by = to;
     if (newOperator) token.operator = newOperator;
     tokens.set(tokenId, token);
@@ -577,7 +592,7 @@ function _transfer(from: Principal, to: Principal, tokenId: nat) {
     const token = tokens.get(tokenId);
     token.owner = to;
     token.transferred_by = from;
-    token.transferred_at = ic.time();
+    token.transferred_at = _nowTime();
     token.operator = null;
 }
 
@@ -608,9 +623,9 @@ function _loadFromState() {
     for (let txRecordsEntry of ic.stableStorage<StableStorage>()?.ledger?.txRecordsEntries || []) {
         txRecords.push(txRecordsEntry);
     }
+}
 
-    metadataObj.symbol = ic.stableStorage<StableStorage>()?.metadata?.symbol || metadataObj.symbol;
-    metadataObj.name = ic.stableStorage<StableStorage>()?.metadata?.name || metadataObj.name;
-    metadataObj.logo = ic.stableStorage<StableStorage>()?.metadata?.logo || metadataObj.logo ;
-    metadataObj.custodians = ic.stableStorage<StableStorage>()?.metadata?.custodians || metadataObj.custodians;
+
+function _nowTime(): nat {
+    return ic.time();
 }

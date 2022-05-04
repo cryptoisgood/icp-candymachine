@@ -18,7 +18,7 @@ export type propertyVariant = Variant<{
     thumbnail?: Opt<string>
 }>;
 
-export type TokenMetadata = Variant<{
+export type TokenMetadata = {
     token_identifier: nat,
     owner: Principal,
     operator?: Opt<Principal>,
@@ -32,7 +32,7 @@ export type TokenMetadata = Variant<{
     approved_by?: Opt<Principal>,
     burned_at?: Opt<nat>,
     burned_by?: Opt<Principal>
-}>;
+};
 
 // http
 

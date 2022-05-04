@@ -1,24 +1,28 @@
-import {Canister, CanisterResult, ic, Query, nat32, Opt, nat, Principal} from 'azle';
+import {Canister, CanisterResult, ic, Query, nat32, Opt, nat, Principal, Stable, Async, UpdateAsync} from 'azle';
+import {NatResponseDto} from "./response-type";
+import {propertyVariant} from "./types";
 
-// type dip721Canister = Canister<{
-//     balanceOf(principal: Principal): CanisterResult<Opt<nat>>;
-//     ownerOf(tokenId: nat): CanisterResult<Opt<Principal>>;
-//     tokenURI(tokenId: nat): CanisterResult<Opt<string>>;
-//     name(): CanisterResult<string>;
-//     symbol(): CanisterResult<string>;
-//     isApprovedForAll(owner: Principal, operator: Principal): CanisterResult<boolean>;
-//     approve(to: Principal, tokenId: nat): CanisterResult<void>;
-//     getApproved(tokenId: nat): CanisterResult<Principal>;
-//     setApprovalForAll(op: Principal, isApproved: boolean): CanisterResult<void>;
-//     transferFrom(from: Principal, to: Principal, tokenId: nat): CanisterResult<void>;
-//     mint(uri: string): CanisterResult<nat>;
-// }>;
+type NFTCanister = Canister<{
+    mint(to: Principal, tokenId: nat, properties: propertyVariant[]): CanisterResult<NatResponseDto>;
+}>;
 
-export function getNat32(): Query<nat32> {
-    return 4294967295;
-}
+let nft = ic.canisters.NFTCanister<NFTCanister>('r7inp-6aaaa-aaaaa-aaabq-cai');
 
-export function printNat32(nat32: nat32): Query<nat32> {
-    ic.print(typeof nat32);
-    return nat32;
+
+let tokenId = 0;
+
+export function* mint(): UpdateAsync<NatResponseDto> {
+    tokenId = 1 + tokenId;
+    const caller = ic.caller();
+    const result: CanisterResult<NatResponseDto> = yield nft.mint(caller, BigInt(tokenId), [
+        {location: "http://127.0.0.1:8000/TechisGood.png?canisterId=ryjl3-tyaaa-aaaaa-aaaba-cai"}
+    ]);
+
+    if (result.err) {
+        return {
+            Err: result.err
+        }
+    }
+
+    return result.ok;
 }
