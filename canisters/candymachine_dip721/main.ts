@@ -14,82 +14,53 @@ import {Metadata, StableStorage, Stats, TxDetails, TxEvent} from "./state-types"
 import {BoolResponseDto, NatResponseDto, PrincipalResponseDto, TokenMetadataResponseDto} from "./response-type";
 
 const tokens = new Map<nat, TokenMetadata>();
+
 const ownerList = new Map<Principal, nat[]>();
 const operators = new Map<Principal, nat[]>();
 const txRecords: TxEvent[] = []
-let metadataObj: Metadata = {
-    name: "SampleNft",
-    symbol: "SNFT",
-    logo: "http://127.0.0.1:8000/TechisGood.png?canisterId=ryjl3-tyaaa-aaaaa-aaaba-cai",
-    custodians: [ic.id(), "rwlgt-iiaaa-aaaaa-aaaaa-cai", "rrkah-fqaaa-aaaaa-aaaaq-cai"]
-};
-
+const metadataObj: Metadata  = {};
+_loadFromState();
 export const ManagementCanister = ic.canisters.Management<Management>('aaaaa-aa');
 
 export function init(): Init {
-    ic.stableStorage<StableStorage>().tokenPk = 0n;
-    ic.stableStorage<StableStorage>().ledger = {
-        tokensEntries: [],
-        ownersEntries: [],
-        operatorsEntries: [],
-        txRecordsEntries: []
-    }
+    metadataObj.name = "SampleNft";
+    metadataObj.symbol = "SNFT";
+    metadataObj.logo = "http://127.0.0.1:8000/TechisGood.png?canisterId=ryjl3-tyaaa-aaaaa-aaaba-cai";
+    metadataObj.custodians = [ic.id(), "2vxsx-fae"];
 }
 
 export function preUpgrade(): PreUpgrade {
-    const ledger = {
-        tokensEntries: [],
-        ownersEntries: [],
-        operatorsEntries: [],
-        txRecordsEntries: []
-    };
-
-    ledger.tokensEntries =
+    ic.stableStorage<StableStorage>().ledger = {};
+    ic.stableStorage<StableStorage>().ledger.tokensEntries =
         _mapToArray<nat, TokenMetadata>(tokens, (key, val) => {
             return {tokenId: key, tokenMetadata: val} as TokenIdToMetadata;
         } );
 
-    ledger.ownersEntries =
+    ic.stableStorage<StableStorage>().ledger.ownersEntries =
         _mapToArray<Principal, nat[]>(ownerList, (key, val) => {
             return {principal: key, tokenIds: val} as TokenIdPrincipal;
         });
 
-    ledger.operatorsEntries =
+    ic.stableStorage<StableStorage>().ledger.operatorsEntries =
         _mapToArray<Principal, nat[]>(operators, (key, val) => {
             return {principal: key, tokenIds: val} as TokenIdPrincipal;
         });
 
-    ledger.txRecordsEntries = [...txRecords]
-
-    ic.stableStorage<StableStorage>().ledger = ledger;
-    ic.stableStorage<StableStorage>().metadata = metadataObj;
+    ic.stableStorage<StableStorage>().ledger.txRecordsEntries = txRecords ? [...txRecords] : [];
+    ic.stableStorage<StableStorage>().metadata = {};
+    ic.stableStorage<StableStorage>().metadata.symbol = metadataObj.symbol;
+    ic.stableStorage<StableStorage>().metadata.name = metadataObj.name;
+    ic.stableStorage<StableStorage>().metadata.logo = metadataObj.logo;
+    ic.stableStorage<StableStorage>().metadata.custodians = metadataObj.custodians;
 }
 
 export function postUpgrade(): PostUpgrade {
-    const ledger = ic.stableStorage<StableStorage>().ledger;
-    for (let tokenURIEntry of ledger.tokensEntries) {
-        tokens.set(tokenURIEntry.tokenId, tokenURIEntry.tokenMetadata);
-    }
-
-    for (let ownersEntry of ledger.ownersEntries) {
-        ownerList.set(ownersEntry.principal, ownersEntry.tokenIds);
-    }
-
-    for (let operatorEntries of ledger.operatorsEntries) {
-        operators.set(operatorEntries.principal, operatorEntries.tokenIds);
-    }
-
-    for (let txRecordsEntry of ledger.txRecordsEntries) {
-        txRecords.push(txRecordsEntry);
-    }
-    metadataObj = ic.stableStorage<StableStorage>().metadata;
     ic.stableStorage<StableStorage>().ledger = {
         tokensEntries: [],
         ownersEntries: [],
         operatorsEntries: [],
         txRecordsEntries: []
     }
-    delete ic.stableStorage<StableStorage>().metadata;
 }
 
 // export function http_request(req: HttpRequest): Query<HttpResponseDto> {
@@ -571,8 +542,30 @@ function _addTokenMetadata(tokenId: nat, metadata: TokenMetadata) {
 
 function _mapToArray<key, val>(map: Map<key, val>, transformer): []{
     const resp = [];
-    for (let key of map.keys()) {
-        resp.push(transformer(key, map.get(key)))
+    if (map) {
+        for (let key of map.keys()) {
+            resp.push(transformer(key, map.get(key)))
+        }
     }
     return [];
+}
+
+function _loadFromState() {
+    for (let tokenURIEntry of ic.stableStorage<StableStorage>()?.ledger?.tokensEntries || []) {
+        tokens.set(tokenURIEntry.tokenId, tokenURIEntry.tokenMetadata);
+    }
+    for (let ownersEntry of ic.stableStorage<StableStorage>()?.ledger?.ownersEntries || []) {
+        ownerList.set(ownersEntry.principal, ownersEntry.tokenIds);
+    }
+    for (let operatorEntries of ic.stableStorage<StableStorage>()?.ledger?.operatorsEntries || []) {
+        operators.set(operatorEntries.principal, operatorEntries.tokenIds);
+    }
+    for (let txRecordsEntry of ic.stableStorage<StableStorage>()?.ledger?.txRecordsEntries || []) {
+        txRecords.push(txRecordsEntry);
+    }
+
+    metadataObj.symbol = ic.stableStorage<StableStorage>()?.metadata?.symbol || metadataObj.symbol;
+    metadataObj.name = ic.stableStorage<StableStorage>()?.metadata?.name || metadataObj.name;
+    metadataObj.logo = ic.stableStorage<StableStorage>()?.metadata?.logo || metadataObj.logo ;
+    metadataObj.custodians = ic.stableStorage<StableStorage>()?.metadata?.custodians || metadataObj.custodians;
 }
