@@ -1,4 +1,4 @@
-import {nat, Opt, Principal, Variant} from "azle";
+import {float32, nat, Opt, Principal, Variant} from "azle";
 import {TokenMetadata, TxEvent} from "./types";
 
 
@@ -7,13 +7,18 @@ export type TokenMetadataResponseDto = Variant<{
     Err?: Opt<string>
 }>;
 
-export type VoidResponseDto = Variant<{
-    Ok?: Opt<nat>,
+export type StringResponseDto = Variant<{
+    Ok?: Opt<string>,
     Err?: Opt<string>
 }>;
 
 export type NatResponseDto = Variant<{
     Ok?: Opt<nat>,
+    Err?: Opt<string>
+}>
+
+export type FloatResponseDto = Variant<{
+    Ok?: Opt<float32>,
     Err?: Opt<string>
 }>
 

@@ -1,7 +1,12 @@
+type StringResponseDto = variant { "Ok": opt text; "Err": opt text };
+
 type NatResponseDto = variant { "Ok": opt nat; "Err": opt text };
 
 type propertyVariant = variant { "location": opt text; "contentType": opt text; "thumbnail": opt text };
 
 service: {
+    "startCaptcha": () -> (StringResponseDto) query;
+    "leftToMint": () -> (NatResponseDto) query;
+    "maxTokens": () -> (NatResponseDto) query;
     "mint": () -> (NatResponseDto);
 }

@@ -6,6 +6,5 @@
     "jsx": "react",            /* Specify JSX code generation: 'preserve', 'react-native', or 'react'. */
     "moduleResolution": "node"
   },
-  "include": ["canisters/**/*"],
-  "exclude": ["canisters/candymachine", "canisters/candymachine_dip721"]
+  "include": ["*"]
 }

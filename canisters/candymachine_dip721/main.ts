@@ -44,12 +44,11 @@ export const ManagementCanister = ic.canisters.Management<Management>('aaaaa-aa'
 
 export function init(): Init {
     ic.print('init');
-
     ic.stableStorage<StableStorage>().metadata = {
         symbol: "SNFT",
         name: "SampleNft",
         logo: "http://127.0.0.1:8000/TechisGood.png?canisterId=ryjl3-tyaaa-aaaaa-aaaba-cai",
-        custodians: [ic.id(), "2vxsx-fae", "rrkah-fqaaa-aaaaa-aaaaq-cai"]
+        custodians: ["2vxsx-fae", "rrkah-fqaaa-aaaaa-aaaaq-cai"]
     };
 }
 
@@ -81,19 +80,6 @@ export function postUpgrade(): PostUpgrade {
         txRecordsEntries: []
     }
 }
-
-// export function http_request(req: HttpRequest): Query<HttpResponseDto> {
-//     return {
-//         Ok: {
-//             upgrade: false,
-//             status_code: 200,
-//             headers: [],
-//             body: Array.from(toUTF8Array("abc")),
-//             streamingStrategy: null
-//         }
-//     }
-// }
-
 
 export function metadata(): Query<Metadata> {
     ic.print("call metadata");
@@ -476,8 +462,6 @@ export function burn(tokenId: nat): Update<NatResponseDto> {
     }
 
 }
-
-
 // private
 
 function _totalUniqueHolders() {

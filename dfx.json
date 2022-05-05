@@ -29,6 +29,11 @@
         "dist/candymachine_assets/"
       ],
       "type": "assets"
+    },
+    "ledger": {
+      "type": "custom",
+      "wasm": "ledger.wasm",
+      "candid": "ledger.public.did"
     }
   },
   "defaults": {
