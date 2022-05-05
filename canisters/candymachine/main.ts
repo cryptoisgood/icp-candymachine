@@ -24,6 +24,7 @@ let nft = ic.canisters.NFTCanister<NFTCanister>('r7inp-6aaaa-aaaaa-aaabq-cai');
 
 const NOT_IMPLEMENTED = "not_implemented";
 const FAILED_CAPTCHA  = "failed_captcha";
+const ALL_NFT_MINTED = "all_nft_minted";
 const MAX_TOKEN_ID = 1000000;
 const PRICE: float32 = 0.5;
 let tokenId = 0;
@@ -50,7 +51,7 @@ export function* mint(captcha: string): UpdateAsync<NatResponseDto> {
 
     if (MAX_TOKEN_ID === tokenId) {
         return {
-            Err: "ALL_NFT_MINTED"
+            Err: ALL_NFT_MINTED
         }
     }
 
