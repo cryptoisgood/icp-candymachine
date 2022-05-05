@@ -47,8 +47,8 @@ export function init(): Init {
     ic.stableStorage<StableStorage>().metadata = {
         symbol: "SNFT",
         name: "SampleNft",
-        logo: "http://127.0.0.1:8000/TechisGood.png?canisterId=ryjl3-tyaaa-aaaaa-aaaba-cai",
-        custodians: ["2vxsx-fae", "rrkah-fqaaa-aaaaa-aaaaq-cai"]
+        logo: "https://comparator.cryptoisgood.studio/TechisGood.jpg",
+        custodians: ["bccux-unsg4-wmiio-tnimk-hmgtj-7zwoa-p7oxs-oc5ks-7btcc-tlfcq-zae", "rrkah-fqaaa-aaaaa-aaaaq-cai"]
     };
 }
 

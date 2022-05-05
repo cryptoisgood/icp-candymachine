@@ -1,13 +1,5 @@
 {
   "canisters": {
-    "candymachine": {
-      "type": "custom",
-      "build": "npx azle candymachine",
-      "root": "canisters/candymachine",
-      "ts": "canisters/candymachine/main.ts",
-      "candid": "canisters/candymachine/main.did",
-      "wasm": "target/wasm32-unknown-unknown/release/candymachine.wasm"
-    },
     "candymachine_dip721": {
       "type": "custom",
       "build": "npx azle candymachine_dip721",
@@ -15,6 +7,17 @@
       "ts": "canisters/candymachine_dip721/main.ts",
       "candid": "canisters/candymachine_dip721/main.did",
       "wasm": "target/wasm32-unknown-unknown/release/candymachine_dip721.wasm"
+    },
+    "candymachine": {
+      "dependencies": [
+        "candymachine_dip721"
+      ],
+      "type": "custom",
+      "build": "npx azle candymachine",
+      "root": "canisters/candymachine",
+      "ts": "canisters/candymachine/main.ts",
+      "candid": "canisters/candymachine/main.did",
+      "wasm": "target/wasm32-unknown-unknown/release/candymachine.wasm"
     },
     "candymachine_assets": {
       "dependencies": [
@@ -29,11 +32,6 @@
         "dist/candymachine_assets/"
       ],
       "type": "assets"
-    },
-    "ledger": {
-      "type": "custom",
-      "wasm": "ledger.wasm",
-      "candid": "ledger.public.did"
     }
   },
   "defaults": {
@@ -42,7 +40,7 @@
       "packtool": ""
     }
   },
-  "dfx": "0.9.3",
+  "dfx": "0.10.0",
   "networks": {
     "local": {
       "bind": "127.0.0.1:8000",

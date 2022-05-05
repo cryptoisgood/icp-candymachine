@@ -65,6 +65,11 @@ module.exports = {
       util: require.resolve("util/"),
     },
   },
+  performance: {
+    hints: false,
+    maxEntrypointSize: 512000,
+    maxAssetSize: 512000
+  },
   output: {
     filename: "index.js",
     path: path.join(__dirname, "dist", frontendDirectory),
@@ -95,7 +100,6 @@ module.exports = {
       ],
     }),
     new webpack.EnvironmentPlugin({
-      NODE_ENV: "development",
       ...canisterEnvVariables,
     }),
     new webpack.ProvidePlugin({

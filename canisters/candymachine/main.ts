@@ -4,11 +4,8 @@ import {
     ic,
     Query,
     nat32,
-    Opt,
     nat,
     Principal,
-    Stable,
-    Async,
     UpdateAsync,
     float32
 } from 'azle';
@@ -17,18 +14,16 @@ import {propertyVariant} from "./types";
 
 type NFTCanister = Canister<{
     mint(to: Principal, tokenId: nat, properties: propertyVariant[]): CanisterResult<NatResponseDto>;
+    totalSupply(): CanisterResult<nat32>;
 }>;
-let nft = ic.canisters.NFTCanister<NFTCanister>('r7inp-6aaaa-aaaaa-aaabq-cai');
 
-// export const ICPCanister = ic.canisters.ICP<ICP>(process.env.ICP_LEDGER_CANISTER_ID);
+let nft = ic.canisters.NFTCanister<NFTCanister>('r7inp-6aaaa-aaaaa-aaabq-cai');
 
 const NOT_IMPLEMENTED = "not_implemented";
 const FAILED_CAPTCHA  = "failed_captcha";
 const ALL_NFT_MINTED = "all_nft_minted";
 const MAX_TOKEN_ID = 1000000;
 const PRICE: float32 = 0.5;
-let tokenId = 0;
-const validatedUsers = new Map<Principal, string>();
 
 export function startCaptcha(): Query<StringResponseDto> {
     return {
@@ -38,15 +33,10 @@ export function startCaptcha(): Query<StringResponseDto> {
 
 export function* mint(captcha: string): UpdateAsync<NatResponseDto> {
     const caller = ic.caller();
-
-    if (!_validateUser(caller, captcha)) {
-        return {
-            Err: FAILED_CAPTCHA
-        }
-    }
-    tokenId = 1 + tokenId;
-    const result: CanisterResult<NatResponseDto> = yield nft.mint(caller, BigInt(tokenId), [
-        {location: "http://127.0.0.1:8000/TechisGood.png?canisterId=ryjl3-tyaaa-aaaaa-aaaba-cai"}
+    const tokenIdResp = yield nft.totalSupply();
+    const tokenId = tokenIdResp.ok;
+    const result: CanisterResult<NatResponseDto> = yield nft.mint(caller, BigInt(tokenId + 1), [
+        {location: "https://comparator.cryptoisgood.studio/TechisGood.jpg"}
     ]);
 
     if (MAX_TOKEN_ID === tokenId) {
@@ -64,9 +54,10 @@ export function* mint(captcha: string): UpdateAsync<NatResponseDto> {
     return result.ok;
 }
 
-export function leftToMint(): Query<NatResponseDto> {
+export function* currentlyMinting(): UpdateAsync<NatResponseDto> {
+    const tokenId = yield nft.totalSupply();
     return {
-        Ok: BigInt(MAX_TOKEN_ID - tokenId)
+        Ok: BigInt(tokenId.ok)
     }
 }
 
@@ -80,10 +71,4 @@ export function price(): Query<FloatResponseDto> {
     return {
         Ok: PRICE
     }
-}
-
-function _validateUser(caller, captcha): boolean {
-    //return validatedUsers.get(caller) === captcha;
-    //implement captcha later
-    return true;
 }
