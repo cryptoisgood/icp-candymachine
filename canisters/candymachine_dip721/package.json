@@ -4,12 +4,18 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "jsmin --level 3 -o main.min.ts main.ts "
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "azle": "^0.1.0"
+  },
+  "devDependencies": {
+    "jsmin": "^1.0.1",
+    "ts-loader": "^9.3.0",
+    "typescript": "^4.6.4"
   }
 }

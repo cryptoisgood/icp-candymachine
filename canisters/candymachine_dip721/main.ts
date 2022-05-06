@@ -38,7 +38,7 @@ const tokens = new Map<nat, TokenMetadata>();
 
 const ownerList = new Map<Principal, nat[]>();
 const operators = new Map<Principal, nat[]>();
-const txRecords: TxEvent[] = []
+const txRecords: TxEvent[] = [];
 _loadFromState();
 export const ManagementCanister = ic.canisters.Management<Management>('aaaaa-aa');
 
@@ -412,7 +412,7 @@ export function transferFrom(from : Principal, to : Principal, tokenId : nat): U
 export function mint(to: Principal, tokenId: nat, properties: propertyVariant[]): Update<NatResponseDto> {
     const caller = ic.caller();
     ic.print(`mint called from ${caller}`);
-    _isCanisterCustodian()
+    _isCanisterCustodian();
     if (tokens.has(tokenId)) {
         return {
             Err: ExistedNFT
@@ -587,6 +587,7 @@ function _addTokenMetadata(tokenId: nat, metadata: TokenMetadata) {
 function _mapToArray<key, val>(map: Map<key, val>, transformer): []{
     const resp = [];
     if (map) {
+        // @ts-ignore
         for (let key of map.keys()) {
             resp.push(transformer(key, map.get(key)))
         }
