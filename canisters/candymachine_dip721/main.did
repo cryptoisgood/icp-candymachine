@@ -12,7 +12,59 @@ type Stats = record {
     "total_unique_holders": nat;
 };
 
+type propertyVariant = record { text; text };
+
+type CreateCanisterArgs = record {
+    "settings": opt CanisterSettings;
+};
+
+type UpdateSettingsArgs = record {
+    "canister_id": principal;
+    "settings": CanisterSettings;
+};
+
+type InstallCodeArgs = record {
+    "mode": InstallCodeMode;
+    "canister_id": principal;
+    "wasm_module": vec nat8;
+    "arg": vec nat8;
+};
+
+type UninstallCodeArgs = record {
+    "canister_id": principal;
+};
+
+type StartCanisterArgs = record {
+    "canister_id": principal;
+};
+
+type StopCanisterArgs = record {
+    "canister_id": principal;
+};
+
 type CanisterStatusArgs = record {
+    "canister_id": principal;
+};
+
+type DeleteCanisterArgs = record {
+    "canister_id": principal;
+};
+
+type DepositCyclesArgs = record {
+    "canister_id": principal;
+};
+
+type ProvisionalCreateCanisterWithCyclesArgs = record {
+    "amount": opt nat;
+    "settings": opt CanisterSettings;
+};
+
+type ProvisionalTopUpCanisterArgs = record {
+    "canister_id": principal;
+    "amount": nat;
+};
+
+type CreateCanisterResult = record {
     "canister_id": principal;
 };
 
@@ -24,11 +76,22 @@ type CanisterStatusResult = record {
     "cycles": nat;
 };
 
+type ProvisionalCreateCanisterWithCyclesResult = record {
+    "canister_id": principal;
+};
+
 type Ledger = record {
     "tokensEntries": vec TokenIdToMetadata;
     "ownersEntries": vec TokenIdPrincipal;
     "operatorsEntries": vec TokenIdPrincipal;
     "txRecordsEntries": vec TxEvent;
+};
+
+type CanisterSettings = record {
+    "controllers": opt vec principal;
+    "compute_allocation": opt nat;
+    "memory_allocation": opt nat;
+    "freezing_threshold": opt nat;
 };
 
 type DefiniteCanisterSettings = record {
@@ -47,7 +110,7 @@ type TokenMetadata = record {
     "token_identifier": nat;
     "owner": principal;
     "operator": opt principal;
-    "properties": vec propertyVariant;
+    "properties": propertyVariant;
     "is_burned": bool;
     "minted_at": nat;
     "minted_by": principal;
@@ -81,9 +144,9 @@ type BoolResponseDto = variant { "Ok": opt bool; "Err": opt text };
 
 type TxEventResponseDto = variant { "Ok": opt TxEvent; "Err": opt text };
 
-type propertyVariant = variant { "location": opt text; "contentType": opt text; "thumbnail": opt text };
-
 type TxDetails = variant { "operator": opt principal; "token_identifier": opt nat; "is_approved": opt bool; "owner": opt principal; "to": opt principal };
+
+type InstallCodeMode = variant { "install": null; "reinstall": null; "upgrade": null };
 
 type CanisterStatus = variant { "running": null; "stopping": null; "stopped": null };
 
@@ -115,6 +178,6 @@ service: () -> {
     "setApprovalForAll": (principal, bool) -> (NatResponseDto);
     "transfer": (principal, nat) -> (NatResponseDto);
     "transferFrom": (principal, principal, nat) -> (NatResponseDto);
-    "mint": (principal, nat, vec propertyVariant) -> (NatResponseDto);
+    "mint": (principal, nat, propertyVariant) -> (NatResponseDto);
     "burn": (nat) -> (NatResponseDto);
 }

@@ -16,10 +16,9 @@ const App: React.FC = () => {
     const [maxTokensVar, setMaxTokensVar] = useRecoilState(maxTokensAtom);
     const [leftToMintVar, setLeftOverTokensVar] = useRecoilState(leftToMintAtom);
     const [canister, setCanister] = useRecoilState(canisters);
-
-    console.log(process.env.NODE_ENV );
-    const network = "local";
-    const host = network === "local" ? "http://127.0.0.1:8000/" : undefined;
+    const isDevelopment = process.env.NODE_ENV !== "production";
+    const host = isDevelopment ? "http://127.0.0.1:8000/" : undefined;
+    if (isDevelopment) console.log("started in dev")
 
     useEffect(() => {
         setCanister([nftCanister, candyMachineCanister]);
@@ -28,11 +27,13 @@ const App: React.FC = () => {
             if(resp.Ok) {
                 setMaxTokensVar(Number(resp.Ok))
             }
+            console.log(resp);
         });
         leftToMint().then((resp) => {
            if (resp.Ok) {
                setLeftOverTokensVar(Number(resp.Ok));
            }
+            console.log(resp);
         });
     }, []);
 
@@ -57,11 +58,15 @@ const App: React.FC = () => {
             canisterId: candyMachineCanister,
             interfaceFactory: idlFactory,
         });
-        await NNSUiActor.mint("");
+        const resp = await NNSUiActor.mint("");
+        console.log(resp);
         leftToMint().then((resp) => {
+            console.log(resp);
             if (resp.Ok) {
                 setLeftOverTokensVar(Number(resp.Ok));
                 setLoading(false);
+            } else {
+                console.error(resp.Err)
             }
         });
 

@@ -7,23 +7,30 @@ import {
     nat,
     Principal,
     UpdateAsync,
-    float32
+    float32,
+    Init,
+    Update
 } from 'azle';
 import {FloatResponseDto, NatResponseDto, StringResponseDto} from "./response-type";
-import {propertyVariant} from "./types";
+import {StableStorage} from "./types";
+type propertyVariant = [string, string];
 
 type NFTCanister = Canister<{
-    mint(to: Principal, tokenId: nat, properties: propertyVariant[]): CanisterResult<NatResponseDto>;
+    mint(to: Principal, tokenId: nat, properties: propertyVariant): CanisterResult<NatResponseDto>;
     totalSupply(): CanisterResult<nat32>;
 }>;
-
-let nft = ic.canisters.NFTCanister<NFTCanister>('r7inp-6aaaa-aaaaa-aaabq-cai');
 
 const NOT_IMPLEMENTED = "not_implemented";
 const FAILED_CAPTCHA  = "failed_captcha";
 const ALL_NFT_MINTED = "all_nft_minted";
 const MAX_TOKEN_ID = 1000000;
 const PRICE: float32 = 0.5;
+
+export function init(): Init {
+    ic.print('init');
+    ic.stableStorage<StableStorage>().custodians = [];
+    ic.stableStorage<StableStorage>().nftCanister = "";
+}
 
 export function startCaptcha(): Query<StringResponseDto> {
     return {
@@ -33,11 +40,11 @@ export function startCaptcha(): Query<StringResponseDto> {
 
 export function* mint(captcha: string): UpdateAsync<NatResponseDto> {
     const caller = ic.caller();
-    const tokenIdResp = yield nft.totalSupply();
+    const tokenIdResp = yield _getNftCanister().totalSupply();
     const tokenId = tokenIdResp.ok;
-    const result: CanisterResult<NatResponseDto> = yield nft.mint(caller, BigInt(tokenId + 1), [
-        {location: "https://comparator.cryptoisgood.studio/TechisGood.jpg"}
-    ]);
+    const result: CanisterResult<NatResponseDto> = yield _getNftCanister().mint(caller, BigInt(tokenId + 1),
+        ["location", "https://comparator.cryptoisgood.studio/TechisGood.jpg"]
+    );
 
     if (MAX_TOKEN_ID === tokenId) {
         return {
@@ -55,9 +62,15 @@ export function* mint(captcha: string): UpdateAsync<NatResponseDto> {
 }
 
 export function* currentlyMinting(): UpdateAsync<NatResponseDto> {
-    const tokenId = yield nft.totalSupply();
-    return {
-        Ok: BigInt(tokenId.ok)
+    const tokenId = yield _getNftCanister().totalSupply();
+    if (tokenId.ok) {
+        return {
+            Ok: BigInt(tokenId.ok)
+        }
+    }else {
+        return {
+            Err: tokenId.err
+        }
     }
 }
 
@@ -70,5 +83,30 @@ export function maxTokens(): Query<NatResponseDto> {
 export function price(): Query<FloatResponseDto> {
     return {
         Ok: PRICE
+    }
+}
+
+export function setCustodians(custodians: string[]): Update<void>  {
+    _checkIfCustodian();
+    ic.stableStorage<StableStorage>().custodians = custodians;
+}
+
+
+export function setNftCanister(id: string): Update<void> {
+    _checkIfCustodian();
+    ic.stableStorage<StableStorage>().nftCanister = id;
+}
+
+export function getNftCanister(): Update<string>  {
+    return ic.stableStorage<StableStorage>().nftCanister;
+}
+
+function _getNftCanister() {
+    return ic.canisters.NFTCanister<NFTCanister>(ic.stableStorage<StableStorage>().nftCanister);
+}
+
+function _checkIfCustodian() {
+    if (!ic.stableStorage<StableStorage>().custodians.includes(ic.caller())) {
+        ic.trap(`${ic.caller()} is not custodian`);
     }
 }

@@ -12,17 +12,13 @@ export type TokenIdPrincipal = {
     tokenIds: nat[]
 };
 
-export type propertyVariant = Variant<{
-    location?: Opt<string>
-    contentType?: Opt<string>
-    thumbnail?: Opt<string>
-}>;
+type propertyVariant = [string, string];
 
 export type TokenMetadata = {
     token_identifier: nat,
     owner: Principal,
     operator?: Opt<Principal>,
-    properties: propertyVariant[],
+    properties: propertyVariant,
     is_burned: boolean,
     minted_at: nat,
     minted_by: Principal,

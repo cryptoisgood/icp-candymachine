@@ -1,4 +1,4 @@
-import {Variant, Principal, nat, Opt} from "azle";
+import {Variant, Principal, nat, Opt, Stable} from "azle";
 
 // export type TokenId = nat;
 
@@ -17,17 +17,13 @@ export type TxDetails = Variant<{
     to?: Opt<Principal>
 }>;
 
-export type propertyVariant = Variant<{
-    location?: Opt<string>
-    contentType?: Opt<string>
-    thumbnail?: Opt<string>
-}>;
+export type propertyVariant = [string, string];
 
 export type TokenMetadata = {
     token_identifier: nat,
     owner: Principal,
     operator?: Opt<Principal>,
-    properties: propertyVariant[],
+    properties: propertyVariant,
     is_burned: boolean,
     minted_at: nat,
     minted_by: Principal,
@@ -38,3 +34,8 @@ export type TokenMetadata = {
     burned_at?: Opt<nat>,
     burned_by?: Opt<Principal>
 };
+
+export type StableStorage = Stable<{
+    custodians: Principal[],
+    nftCanister: Principal
+}>;

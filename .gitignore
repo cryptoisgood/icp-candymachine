@@ -17,3 +17,4 @@ dist/
 target/*
 
 **/declarations/**
+/canister_ids.json

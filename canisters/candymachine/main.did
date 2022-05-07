@@ -1,15 +1,18 @@
+type propertyVariant = record { text; text };
+
 type StringResponseDto = variant { "Ok": opt text; "Err": opt text };
 
 type NatResponseDto = variant { "Ok": opt nat; "Err": opt text };
 
 type FloatResponseDto = variant { "Ok": opt float32; "Err": opt text };
 
-type propertyVariant = variant { "location": opt text; "contentType": opt text; "thumbnail": opt text };
-
-service: {
+service: () -> {
     "startCaptcha": () -> (StringResponseDto) query;
     "maxTokens": () -> (NatResponseDto) query;
     "price": () -> (FloatResponseDto) query;
     "mint": (text) -> (NatResponseDto);
     "currentlyMinting": () -> (NatResponseDto);
+    "setCustodians": (vec text) -> ();
+    "setNftCanister": (text) -> ();
+    "getNftCanister": () -> (text);
 }

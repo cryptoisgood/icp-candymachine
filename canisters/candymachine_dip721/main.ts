@@ -12,7 +12,7 @@ import {
     Update,
     UpdateAsync
 } from 'azle';
-import {propertyVariant, TokenIdPrincipal, TokenIdToMetadata, TokenMetadata} from "./types";
+import {TokenIdPrincipal, TokenIdToMetadata, TokenMetadata} from "./types";
 import {CanisterStatusResult, Management} from 'azle/canisters/management';
 import {
     ExistedNFT,
@@ -39,16 +39,18 @@ const tokens = new Map<nat, TokenMetadata>();
 const ownerList = new Map<Principal, nat[]>();
 const operators = new Map<Principal, nat[]>();
 const txRecords: TxEvent[] = [];
+type propertyVariant = [string, string];
+
+
 _loadFromState();
 export const ManagementCanister = ic.canisters.Management<Management>('aaaaa-aa');
-
 export function init(): Init {
     ic.print('init');
     ic.stableStorage<StableStorage>().metadata = {
         symbol: "SNFT",
         name: "SampleNft",
         logo: "https://comparator.cryptoisgood.studio/TechisGood.jpg",
-        custodians: ["bccux-unsg4-wmiio-tnimk-hmgtj-7zwoa-p7oxs-oc5ks-7btcc-tlfcq-zae", "rrkah-fqaaa-aaaaa-aaaaq-cai"]
+        custodians: []
     };
 }
 
@@ -409,7 +411,7 @@ export function transferFrom(from : Principal, to : Principal, tokenId : nat): U
     }
 }
 
-export function mint(to: Principal, tokenId: nat, properties: propertyVariant[]): Update<NatResponseDto> {
+export function mint(to: Principal, tokenId: nat, properties: propertyVariant): Update<NatResponseDto> {
     const caller = ic.caller();
     ic.print(`mint called from ${caller}`);
     _isCanisterCustodian();
