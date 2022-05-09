@@ -33,6 +33,7 @@ import {
     TokenMetadataResponseDto,
     TxEventResponseDto
 } from "./response-type";
+import {config} from "../../candymachine-config";
 
 const tokens = new Map<nat, TokenMetadata>();
 
@@ -47,10 +48,10 @@ export const ManagementCanister = ic.canisters.Management<Management>('aaaaa-aa'
 export function init(): Init {
     ic.print('init');
     ic.stableStorage<StableStorage>().metadata = {
-        symbol: "SNFT",
-        name: "SampleNft",
-        logo: "https://comparator.cryptoisgood.studio/TechisGood.jpg",
-        custodians: []
+        symbol: config.COLLECTION_SYMBOL,
+        name: config.COLLECTION_NAME,
+        logo: config.COLLECTION_LOGO,
+        custodians: [config.PLUG_ADMIN_PRINCIPAL]
     };
 }
 

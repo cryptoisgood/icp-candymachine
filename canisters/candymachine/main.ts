@@ -13,6 +13,9 @@ import {
 } from 'azle';
 import {FloatResponseDto, NatResponseDto, StringResponseDto} from "./response-type";
 import {StableStorage} from "./types";
+import {config} from "../../candymachine-config";
+
+
 type propertyVariant = [string, string];
 
 type NFTCanister = Canister<{
@@ -23,13 +26,14 @@ type NFTCanister = Canister<{
 const NOT_IMPLEMENTED = "not_implemented";
 const FAILED_CAPTCHA  = "failed_captcha";
 const ALL_NFT_MINTED = "all_nft_minted";
-const MAX_TOKEN_ID = 1000000;
-const PRICE: float32 = 0.5;
+const MAX_TOKEN_ID = config.COLLECTION_SIZE;
+const PRICE: float32 = config.PRICE;
 
 export function init(): Init {
     ic.print('init');
-    ic.stableStorage<StableStorage>().custodians = [];
+    ic.stableStorage<StableStorage>().custodians = [config.PLUG_ADMIN_PRINCIPAL];
     ic.stableStorage<StableStorage>().nftCanister = "";
+    ic.stableStorage<StableStorage>().initMint = false;
 }
 
 export function startCaptcha(): Query<StringResponseDto> {
@@ -39,6 +43,10 @@ export function startCaptcha(): Query<StringResponseDto> {
 }
 
 export function* mint(captcha: string): UpdateAsync<NatResponseDto> {
+    if (!ic.stableStorage<StableStorage>().initMint){
+        ic.trap("mint hasn't been initiated");
+    }
+
     const caller = ic.caller();
     const tokenIdResp = yield _getNftCanister().totalSupply();
     const tokenId = tokenIdResp.ok;
@@ -99,6 +107,15 @@ export function setNftCanister(id: string): Update<void> {
 
 export function getNftCanister(): Update<string>  {
     return ic.stableStorage<StableStorage>().nftCanister;
+}
+
+export function initiateMint(): Update<void> {
+    _checkIfCustodian();
+    ic.stableStorage<StableStorage>().initMint = true;
+}
+
+export function isInit(): Query<boolean> {
+    return ic.stableStorage<StableStorage>().initMint;
 }
 
 function _getNftCanister() {

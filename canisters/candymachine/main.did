@@ -10,9 +10,11 @@ service: () -> {
     "startCaptcha": () -> (StringResponseDto) query;
     "maxTokens": () -> (NatResponseDto) query;
     "price": () -> (FloatResponseDto) query;
+    "isInit": () -> (bool) query;
     "mint": (text) -> (NatResponseDto);
     "currentlyMinting": () -> (NatResponseDto);
     "setCustodians": (vec text) -> ();
     "setNftCanister": (text) -> ();
     "getNftCanister": () -> (text);
+    "initiateMint": () -> ();
 }

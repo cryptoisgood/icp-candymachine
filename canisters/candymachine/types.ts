@@ -37,5 +37,6 @@ export type TokenMetadata = {
 
 export type StableStorage = Stable<{
     custodians: Principal[],
-    nftCanister: Principal
+    nftCanister: Principal,
+    initMint: boolean
 }>;

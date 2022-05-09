@@ -38,7 +38,22 @@ export const leftToMintAtom = atom({
     ]
 });
 
-export const canisters = atom({
+export const canisterAtom = atom({
     key: 'canisters',
     default: []
+});
+
+export const isAdminAtom = atom({
+    key: 'is_admin',
+    default: false
+});
+
+export const isInitiatedAtom = atom({
+    key: 'is_initiated',
+    default: false
+});
+
+export const hostAtom = atom({
+    key: 'host',
+    default: undefined
 });

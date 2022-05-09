@@ -4,7 +4,9 @@
     "lib": ["es2020", "DOM", "esnext"],  /* Specify library files to be included in the compilation. */
     "allowJs": true,           /* Allow javascript files to be compiled. */
     "jsx": "react",            /* Specify JSX code generation: 'preserve', 'react-native', or 'react'. */
-    "moduleResolution": "node"
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true
   },
   "include": ["canisters/**/*"],
   "exclude": ["canisters/candymachine", "canisters/candymachine_dip721"]

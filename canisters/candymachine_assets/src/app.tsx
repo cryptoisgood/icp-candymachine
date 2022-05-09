@@ -5,73 +5,37 @@ import {canisterId as nftCanister} from "../../declarations/candymachine_dip721"
 import {canisterId as candyMachineCanister, idlFactory} from "../../declarations/candymachine";
 import {atom, useRecoilState} from "recoil";
 import {useEffect} from "react";
-import {leftToMint, maxTokens} from "./candymachine";
-import {canisters, connectedAtom, leftToMintAtom, loadingAtom, maxTokensAtom} from "./atoms";
-import {_SERVICE} from "../../declarations/candymachine/candymachine.did";
+import {canisterAtom, connectedAtom, hostAtom, isAdminAtom, leftToMintAtom, loadingAtom, maxTokensAtom} from "./atoms";
+import Minter from "./minter";
+import {config} from "../../../candymachine-config";
+import AdminConfig from "./admin-config";
 
 const App: React.FC = () => {
 
     const [loading, setLoading] = useRecoilState(loadingAtom);
     const [connected, setConnected] = useRecoilState(connectedAtom);
-    const [maxTokensVar, setMaxTokensVar] = useRecoilState(maxTokensAtom);
-    const [leftToMintVar, setLeftOverTokensVar] = useRecoilState(leftToMintAtom);
-    const [canister, setCanister] = useRecoilState(canisters);
+    const [canister, setCanister] = useRecoilState(canisterAtom);
+    const [isAdmin, setIsAdmin] = useRecoilState(isAdminAtom);
+    const [host, setHost] = useRecoilState(hostAtom);
     const isDevelopment = process.env.NODE_ENV !== "production";
-    const host = isDevelopment ? "http://127.0.0.1:8000/" : undefined;
-    if (isDevelopment) console.log("started in dev")
+    if (isDevelopment) {
+        console.log("started in dev");
+        setHost("http://127.0.0.1:8000/");
+    }
 
     useEffect(() => {
         setCanister([nftCanister, candyMachineCanister]);
-        checkConnected().then();
-        maxTokens().then((resp) => {
-            if(resp.Ok) {
-                setMaxTokensVar(Number(resp.Ok))
-            }
-            console.log(resp);
-        });
-        leftToMint().then((resp) => {
-           if (resp.Ok) {
-               setLeftOverTokensVar(Number(resp.Ok));
-           }
-            console.log(resp);
-        });
     }, []);
 
-    async function checkConnected() {
-        if (!connected) {
-            const result = await (window as any).ic.plug.isConnected();
-            if (result) {
-                setConnected(true);
-            }
+
+
+    async function afterConnected() {
+        setConnected(true);
+        const publicKey = await (window as any).ic.plug.agent.getPrincipal();
+        if (publicKey.toString() === config.PLUG_ADMIN_PRINCIPAL) {
+            setIsAdmin(true);
         }
     }
-
-    async function mint() {
-        // Initialise Agent, expects no return value
-        setLoading(true);
-        await (window as any)?.ic?.plug?.requestConnect({
-            whitelist: canister,
-            host: host
-        });
-
-        const NNSUiActor: _SERVICE = await (window as any).ic.plug.createActor({
-            canisterId: candyMachineCanister,
-            interfaceFactory: idlFactory,
-        });
-        const resp = await NNSUiActor.mint("");
-        console.log(resp);
-        leftToMint().then((resp) => {
-            console.log(resp);
-            if (resp.Ok) {
-                setLeftOverTokensVar(Number(resp.Ok));
-                setLoading(false);
-            } else {
-                console.error(resp.Err)
-            }
-        });
-
-    }
-
 
     return (
         <div className={"d-flex justify-content-center margin-top minter-dialog"}>
@@ -96,26 +60,21 @@ const App: React.FC = () => {
                 <Card.Body>
                     <Card.Title>Candy Machine </Card.Title>
                     <Card.Subtitle className="mb-2 text-muted"><a href={"https://github.com/cryptoisgood/icp-candymachine"}>Github</a></Card.Subtitle>
-                        {!connected &&
-                            <PlugConnect
-                                dark
-                                whitelist={canister}
-                                host={host}
-                                onConnectCallback={() => setConnected(true)}
-                            />
-                        }
-                        {connected &&
-                                <Container>
-                                    <Row>
-                                        <Col>
-                                            <p>{leftToMintVar} of {maxTokensVar} minted</p>
-                                        </Col>
-                                    </Row>
-                                    <Row>
-                                        <Col><Button onClick={mint} variant="outline-primary">Mint</Button></Col>
-                                    </Row>
-                                </Container>
-                        }
+                    {!connected &&
+                        <PlugConnect
+                            dark
+                            whitelist={canister}
+                            host={host}
+                            onConnectCallback={afterConnected}
+                        />
+                    }
+                    {isAdmin &&
+                        <AdminConfig></AdminConfig>
+                    }
+
+                    {connected &&
+                        <Minter></Minter>
+                    }
                 </Card.Body>
             </Card>
         </div>
