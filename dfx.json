@@ -32,6 +32,15 @@
         "dist/candymachine_assets/"
       ],
       "type": "assets"
+    },
+    "asset_canister": {
+      "dependencies": [
+        "candymachine_assets"
+      ],
+      "source": [
+        "canisters/asset_canister/assets"
+      ],
+      "type": "assets"
     }
   },
   "defaults": {
