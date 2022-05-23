@@ -1,0 +1,8 @@
+[workspace]
+members = [
+    "canisters/candymachine_rust_dip721",
+]
+
+[profile.release]
+lto = true
+opt-level = 'z'

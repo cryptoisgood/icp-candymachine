@@ -8,21 +8,39 @@ import {
     Principal,
     UpdateAsync,
     float32,
+    nat8,
     Init,
     Update,
     Migrate,
     PreUpgrade,
-    PostUpgrade
+    PostUpgrade, Variant, nat64, int64, int, nat16, int32, int8, float64, int16
 } from 'azle';
 import {FloatResponseDto, NatResponseDto, StringResponseDto} from "./response-type";
 import {StableStorage} from "./types";
-import {config} from "../../candymachine-config";
+import {config} from "../candymachine_assets/src/candymachine-config";
+type GenericValue = Variant<{
+    Nat64Content: nat64;
+    Nat32Content : nat32;
+    BoolContent : boolean;
+    Nat8Content : nat8;
+    Int64Content : int64;
+    IntContent : int;
+    NatContent : nat;
+    Nat16Content : nat16;
+    Int32Content : int32;
+    Int8Content : int8;
+    FloatContent : float64;
+    Int16Content : int16;
+    BlobContent : nat8[];
+    Principal : Principal;
+    TextContent : string;
+}>;
 
-type propertyVariant = [string, string];
+type propertyVariant = [string, GenericValue];
 
 type NFTCanister = Canister<{
-    mint(to: Principal, tokenId: nat, properties: propertyVariant): CanisterResult<NatResponseDto>;
-    totalSupply(): CanisterResult<nat32>;
+    mint(to: Principal, tokenId: nat, properties: propertyVariant[]): CanisterResult<NatResponseDto>;
+    totalSupply(): CanisterResult<nat>;
 }>;
 
 const NOT_IMPLEMENTED = "not_implemented";
@@ -38,23 +56,23 @@ export function init(): Init {
     ic.stableStorage<StableStorage>().initMint = false;
 }
 
-//uncomment and deploy after
+// //uncomment and deploy after
+//
+export function preUpgrade(): PreUpgrade {
+    const migrateCustoriand: Migrate<Principal[]> = ic.stableStorage<StableStorage>().custodians;
+    ic.stableStorage<StableStorage>().custodians = migrateCustoriand;
 
-// export function preUpgrade(): PreUpgrade {
-//     const migrateCustoriand: Migrate<Principal[]> = ic.stableStorage<StableStorage>().custodians;
-//     ic.stableStorage<StableStorage>().custodians = migrateCustoriand;
-//
-//     const migreatedCanister: Migrate<string> = ic.stableStorage<StableStorage>().nftCanister;
-//     ic.stableStorage<StableStorage>().nftCanister = migreatedCanister;
-//
-//
-//     const migrateInitMint: Migrate<boolean> = ic.stableStorage<StableStorage>().initMint;
-//     ic.stableStorage<StableStorage>().initMint = migrateInitMint;
-// }
-//
-// export function postUpgrade(): PostUpgrade {
-//
-// }
+    const migreatedCanister: Migrate<string> = ic.stableStorage<StableStorage>().nftCanister;
+    ic.stableStorage<StableStorage>().nftCanister = migreatedCanister;
+
+
+    const migrateInitMint: Migrate<boolean> = ic.stableStorage<StableStorage>().initMint;
+    ic.stableStorage<StableStorage>().initMint = migrateInitMint;
+}
+
+export function postUpgrade(): PostUpgrade {
+
+}
 
 
 export function startCaptcha(): Query<StringResponseDto> {
@@ -71,8 +89,8 @@ export function* mint(captcha: string): UpdateAsync<NatResponseDto> {
     const caller = ic.caller();
     const tokenIdResp = yield _getNftCanister().totalSupply();
     const tokenId = tokenIdResp.ok;
-    const result: CanisterResult<NatResponseDto> = yield _getNftCanister().mint(caller, BigInt(tokenId + 1),
-        ["location", "https://comparator.cryptoisgood.studio/TechisGood.jpg"]
+    const result: CanisterResult<NatResponseDto> = yield _getNftCanister().mint(caller, BigInt(tokenId + 1n),
+        [["location", {TextContent: "https://comparator.cryptoisgood.studio/TechisGood.jpg"}]]
     );
 
     if (MAX_TOKEN_ID === tokenId) {
@@ -87,20 +105,7 @@ export function* mint(captcha: string): UpdateAsync<NatResponseDto> {
         }
     }
 
-    return result.ok;
-}
-
-export function* currentlyMinting(): UpdateAsync<NatResponseDto> {
-    const tokenId = yield _getNftCanister().totalSupply();
-    if (tokenId.ok) {
-        return {
-            Ok: BigInt(tokenId.ok)
-        }
-    }else {
-        return {
-            Err: tokenId.err
-        }
-    }
+    return result.ok
 }
 
 export function maxTokens(): Query<NatResponseDto> {

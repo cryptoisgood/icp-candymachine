@@ -7,6 +7,11 @@ export type TokenMetadataResponseDto = Variant<{
     Err?: Opt<string>
 }>;
 
+export type TokenMetadataArrResponseDto = Variant<{
+    Ok?: Opt<TokenMetadata[]>,
+    Err?: Opt<string>
+}>;
+
 export type VoidResponseDto = Variant<{
     Ok?: Opt<nat>,
     Err?: Opt<string>
@@ -14,6 +19,11 @@ export type VoidResponseDto = Variant<{
 
 export type NatResponseDto = Variant<{
     Ok?: Opt<nat>,
+    Err?: Opt<string>
+}>
+
+export type NatArrResponseDto = Variant<{
+    Ok?: Opt<nat[]>,
     Err?: Opt<string>
 }>
 

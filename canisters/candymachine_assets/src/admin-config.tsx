@@ -6,10 +6,11 @@ import {isInit} from "./candymachine";
 import {_SERVICE as dip721Service} from "../../declarations/candymachine_dip721/candymachine_dip721.did";
 import {canisterId as dip721contract, idlFactory as dip721Factory} from "../../declarations/candymachine_dip721";
 import {canisterId as candymachineContract, idlFactory as candyMachineFactory} from "../../declarations/candymachine";
-import {config} from "../../../candymachine-config";
+import {config} from "./candymachine-config";
 import {Principal} from "@dfinity/principal";
 import {_SERVICE as candymachineService} from "../../declarations/candymachine/candymachine.did";
 import {Button} from "react-bootstrap";
+
 const AdminConfig: React.FC = () => {
     const [loading, setLoading] = useRecoilState(loadingAtom);
     const [initiated, setIsInitiated] = useRecoilState(isInitiatedAtom);
@@ -39,6 +40,9 @@ const AdminConfig: React.FC = () => {
         const plugPrincipal = Principal.fromText(config.PLUG_ADMIN_PRINCIPAL);
         console.log("starting custodian setup")
         await dip721Actor.setCustodians([candyMachinePrincipal, plugPrincipal]);
+        await dip721Actor.setLogo(config.COLLECTION_LOGO);
+        await dip721Actor.setName(config.COLLECTION_NAME);
+        await dip721Actor.setSymbol(config.COLLECTION_SYMBOL);
         console.log("finished custodian setup")
         const candymachineActor: candymachineService = await (window as any).ic.plug.createActor({
             canisterId: candymachineContract,

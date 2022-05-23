@@ -1,12 +1,9 @@
 {
   "canisters": {
     "candymachine_dip721": {
-      "type": "custom",
-      "build": "npx azle candymachine_dip721",
-      "root": "canisters/candymachine_dip721",
-      "ts": "canisters/candymachine_dip721/main.ts",
-      "candid": "canisters/candymachine_dip721/main.did",
-      "wasm": "target/wasm32-unknown-unknown/release/candymachine_dip721.wasm.gz"
+      "package": "candymachine_rust_dip721",
+      "candid": "canisters/candymachine_rust_dip721/src/main.did",
+      "type": "rust"
     },
     "candymachine": {
       "dependencies": [

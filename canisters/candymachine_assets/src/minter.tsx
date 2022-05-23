@@ -36,10 +36,7 @@ const Minter: React.FC = () => {
                 console.log(resp);
             });
             leftToMint().then((resp) => {
-                if (resp.Ok) {
-                    setLeftOverTokensVar(Number(resp.Ok));
-                }
-                console.log(resp);
+                setLeftOverTokensVar(Number(resp));
             });
         }
     }, [initiated]);
@@ -59,13 +56,8 @@ const Minter: React.FC = () => {
         const resp = await NNSUiActor.mint("");
         console.log(resp);
         leftToMint().then((resp) => {
-            console.log(resp);
-            if (resp.Ok) {
-                setLeftOverTokensVar(Number(resp.Ok));
-                setLoading(false);
-            } else {
-                console.error(resp.Err)
-            }
+            setLeftOverTokensVar(Number(resp));
+            setLoading(false);
         });
     }
 

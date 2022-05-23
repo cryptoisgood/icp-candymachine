@@ -12,7 +12,7 @@ type Stats = record {
     "total_unique_holders": nat;
 };
 
-type propertyVariant = record { text; text };
+type StringProperty = record { text; GenericValue };
 
 type CreateCanisterArgs = record {
     "settings": opt CanisterSettings;
@@ -107,19 +107,19 @@ type TokenIdToMetadata = record {
 };
 
 type TokenMetadata = record {
-    "token_identifier": nat;
-    "owner": principal;
-    "operator": opt principal;
-    "properties": propertyVariant;
-    "is_burned": bool;
-    "minted_at": nat;
-    "minted_by": principal;
-    "transferred_at": opt nat;
+    "transferred_at": opt nat64;
     "transferred_by": opt principal;
-    "approved_at": opt nat;
-    "approved_by": opt principal;
-    "burned_at": opt nat;
+    "owner": opt principal;
+    "operator": opt principal;
+    "properties": vec StringProperty;
+    "is_burned": bool;
+    "token_identifier": nat;
+    "burned_at": opt nat64;
     "burned_by": opt principal;
+    "approved_at": opt nat64;
+    "approved_by": opt principal;
+    "minted_at": nat64;
+    "minted_by": principal;
 };
 
 type TokenIdPrincipal = record {
@@ -138,6 +138,10 @@ type NatResponseDto = variant { "Ok": opt nat; "Err": opt text };
 
 type PrincipalResponseDto = variant { "Ok": opt principal; "Err": opt text };
 
+type NatArrResponseDto = variant { "Ok": opt vec nat; "Err": opt text };
+
+type TokenMetadataArrResponseDto = variant { "Ok": opt vec TokenMetadata; "Err": opt text };
+
 type TokenMetadataResponseDto = variant { "Ok": opt TokenMetadata; "Err": opt text };
 
 type BoolResponseDto = variant { "Ok": opt bool; "Err": opt text };
@@ -150,24 +154,28 @@ type InstallCodeMode = variant { "install": null; "reinstall": null; "upgrade": 
 
 type CanisterStatus = variant { "running": null; "stopping": null; "stopped": null };
 
+type GenericValue = variant { "Nat64Content": nat64; "Nat32Content": nat32; "BoolContent": bool; "Nat8Content": nat8; "Int64Content": int64; "IntContent": int; "NatContent": nat; "Nat16Content": nat16; "Int32Content": int32; "Int8Content": int8; "FloatContent": float64; "Int16Content": int16; "BlobContent": vec nat8; "Principal": principal; "TextContent": text };
+
 service: () -> {
     "metadata": () -> (Metadata) query;
     "name": () -> (text) query;
     "symbol": () -> (text) query;
     "logo": () -> (text) query;
     "custodians": () -> (vec principal) query;
-    "totalTransactions": () -> (nat32) query;
-    "totalSupply": () -> (nat32) query;
+    "totalTransactions": () -> (nat) query;
+    "totalSupply": () -> (nat) query;
     "totalUniqueHolders": () -> (opt nat) query;
     "supportedInterfaces": () -> (vec text) query;
     "balanceOf": (principal) -> (NatResponseDto) query;
     "ownerOf": (nat) -> (PrincipalResponseDto) query;
+    "ownerTokenIdentifiers": (principal) -> (NatArrResponseDto) query;
+    "ownerTokenMetadata": (principal) -> (TokenMetadataArrResponseDto) query;
     "operatorOf": (nat) -> (PrincipalResponseDto) query;
-    "ownerTokenMetadata": (principal) -> (PrincipalResponseDto) query;
-    "operatorTokenIdentifiers": (principal) -> (PrincipalResponseDto) query;
+    "operatorTokenIdentifiers": (principal) -> (NatArrResponseDto) query;
+    "operatorTokenMetadata": (principal) -> (TokenMetadataArrResponseDto) query;
     "tokenMetadata": (nat) -> (TokenMetadataResponseDto) query;
     "isApprovedForAll": (principal, principal) -> (BoolResponseDto) query;
-    "transaction": (nat32) -> (TxEventResponseDto) query;
+    "transaction": (nat) -> (TxEventResponseDto) query;
     "setName": (text) -> ();
     "setLogo": (text) -> ();
     "setSymbol": (text) -> ();
@@ -178,6 +186,6 @@ service: () -> {
     "setApprovalForAll": (principal, bool) -> (NatResponseDto);
     "transfer": (principal, nat) -> (NatResponseDto);
     "transferFrom": (principal, principal, nat) -> (NatResponseDto);
-    "mint": (principal, nat, propertyVariant) -> (NatResponseDto);
+    "mint": (principal, nat, vec StringProperty) -> (NatResponseDto);
     "burn": (nat) -> (NatResponseDto);
 }

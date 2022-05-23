@@ -3,16 +3,17 @@ import {
     ic,
     Init,
     nat,
-    nat32,
+    nat32, nat8,
+    Migrate,
     Opt,
     PostUpgrade,
     PreUpgrade,
     Principal,
     Query,
     Update,
-    UpdateAsync
+    UpdateAsync, Variant, nat64, int64, int, nat16, int32, int8, float64, int16
 } from 'azle';
-import {TokenIdPrincipal, TokenIdToMetadata, TokenMetadata} from "./types";
+import {TokenIdPrincipal, TokenIdToMetadata, TokenMetadata, GenericValue} from "./types";
 import {CanisterStatusResult, Management} from 'azle/canisters/management';
 import {
     ExistedNFT,
@@ -27,21 +28,20 @@ import {
 } from "./constants";
 import {Metadata, StableStorage, Stats, TxDetails, TxEvent} from "./state-types";
 import {
-    BoolResponseDto,
+    BoolResponseDto, NatArrResponseDto,
     NatResponseDto,
-    PrincipalResponseDto,
+    PrincipalResponseDto, TokenMetadataArrResponseDto,
     TokenMetadataResponseDto,
     TxEventResponseDto
 } from "./response-type";
-import {config} from "../../candymachine-config";
+import {config} from "../candymachine_assets/src/candymachine-config";
+type StringProperty = [string, GenericValue];
+type TokenIdentifier = nat;
 
-const tokens = new Map<nat, TokenMetadata>();
-
+const tokens = new Map<TokenIdentifier, TokenMetadata>();
 const ownerList = new Map<Principal, nat[]>();
 const operators = new Map<Principal, nat[]>();
 const txRecords: TxEvent[] = [];
-type propertyVariant = [string, string];
-
 
 _loadFromState();
 export const ManagementCanister = ic.canisters.Management<Management>('aaaaa-aa');
@@ -72,6 +72,9 @@ export function preUpgrade(): PreUpgrade {
             }),
         txRecordsEntries: txRecords ? [...txRecords] : []
     }
+
+    const custy: Migrate<Principal[]> = ic.stableStorage<StableStorage>().metadata.custodians;
+    ic.stableStorage<StableStorage>().metadata.custodians = custy;
 }
 
 export function postUpgrade(): PostUpgrade {
@@ -138,12 +141,12 @@ export function setCustodians(custodians: Principal[]): Update<void> {
     ic.stableStorage<StableStorage>().metadata.custodians = custodians
 }
 
-export function totalTransactions(): Query<nat32> {
-    return txRecords.length;
+export function totalTransactions(): Query<nat> {
+    return _totalTransaction();
 }
 
-export function totalSupply(): Query<nat32> {
-    return tokens.size
+export function totalSupply(): Query<nat> {
+    return _totalSupply();
 }
 
 export function* cycles(): UpdateAsync<Opt<nat>> {
@@ -188,7 +191,7 @@ export function balanceOf(p: Principal): Query<NatResponseDto> {
         };
 }
 
-export function ownerOf(tokenId: nat): Query<PrincipalResponseDto> {
+export function ownerOf(tokenId: TokenIdentifier): Query<PrincipalResponseDto> {
     const token = tokens.get(tokenId);
     return token ?
         {
@@ -199,7 +202,30 @@ export function ownerOf(tokenId: nat): Query<PrincipalResponseDto> {
         };
 }
 
-export function operatorOf(tokenId: nat): Query<PrincipalResponseDto> {
+export function ownerTokenIdentifiers(owner: Principal): Query<NatArrResponseDto> {
+    const nfts = ownerList.get(owner);
+    if (!nfts || nfts.length == 0) {
+        return {
+            Err: TokenNotFound
+        }
+    }
+
+    return {
+        Ok: nfts
+    }
+
+}
+
+export function ownerTokenMetadata(owner: Principal): Query<TokenMetadataArrResponseDto> {
+    const meta = _getOwnersTokenMetadata(owner);
+    return meta.length === 0 ? {
+        Err: OwnerNotFound
+    } : {
+        Ok: meta
+    };
+}
+
+export function operatorOf(tokenId: TokenIdentifier): Query<PrincipalResponseDto> {
     const ope = _operatorOf(tokenId);
     return ope.length === 0 ? {
         Err: OperatorNotFound
@@ -208,25 +234,26 @@ export function operatorOf(tokenId: nat): Query<PrincipalResponseDto> {
     }
 }
 
-export function ownerTokenMetadata(owner: Principal): Query<PrincipalResponseDto> {
+
+export function operatorTokenIdentifiers(owner: Principal): Query<NatArrResponseDto> {
     const meta = _getOwnersTokenMetadata(owner);
     return meta.length === 0 ? {
         Err: TokenNotFound
     } : {
-        Ok: meta[0].owner
+        Ok: meta.map(x=>x.token_identifier)
     };
 }
 
-export function operatorTokenIdentifiers(owner: Principal): Query<PrincipalResponseDto> {
+export function operatorTokenMetadata(owner: Principal): Query<TokenMetadataArrResponseDto> {
     const meta = _getOwnersTokenMetadata(owner);
     return meta.length === 0 ? {
-        Err: TokenNotFound
+        Err: OwnerNotFound
     } : {
-        Ok: meta[0].operator
+        Ok: meta
     };
 }
 
-export function tokenMetadata(tokenId: nat): Query<TokenMetadataResponseDto> {
+export function tokenMetadata(tokenId: TokenIdentifier): Query<TokenMetadataResponseDto> {
     if (tokens.has(tokenId)) {
         return {
             Ok: tokens.get(tokenId)
@@ -250,8 +277,8 @@ export function isApprovedForAll(owner : Principal, operator : Principal): Query
     }
 }
 
-export function transaction(index: nat32): Query<TxEventResponseDto> {
-    const chosenIndex = index - 1;
+export function transaction(index: nat): Query<TxEventResponseDto> {
+    const chosenIndex = index - 1n;
 
     if (chosenIndex < 0) {
         return {
@@ -264,11 +291,11 @@ export function transaction(index: nat32): Query<TxEventResponseDto> {
     }
 
     return {
-        Ok: txRecords[chosenIndex]
+        Ok: txRecords[Number(chosenIndex)]
     }
 }
 
-export function approve(approvedBy : Principal, tokenId : nat) : Update<NatResponseDto>{
+export function approve(approvedBy : Principal, tokenId : TokenIdentifier) : Update<NatResponseDto>{
     const caller = ic.caller();
     if (caller === approvedBy) {
         return {
@@ -342,7 +369,7 @@ export function setApprovalForAll(op : Principal, isApproved : boolean): Update<
     }
 }
 
-export function transfer(to: Principal, tokenId : nat): Update<NatResponseDto> {
+export function transfer(to: Principal, tokenId : TokenIdentifier): Update<NatResponseDto> {
     const caller = ic.caller();
 
     if (caller === to) {
@@ -372,7 +399,7 @@ export function transfer(to: Principal, tokenId : nat): Update<NatResponseDto> {
     }
 }
 
-export function transferFrom(from : Principal, to : Principal, tokenId : nat): Update<NatResponseDto> {
+export function transferFrom(from : Principal, to : Principal, tokenId : TokenIdentifier): Update<NatResponseDto> {
     const caller = ic.caller();
     if (from === to) {
         return {
@@ -412,7 +439,7 @@ export function transferFrom(from : Principal, to : Principal, tokenId : nat): U
     }
 }
 
-export function mint(to: Principal, tokenId: nat, properties: propertyVariant): Update<NatResponseDto> {
+export function mint(to: Principal, tokenId: TokenIdentifier, properties: StringProperty[]): Update<NatResponseDto> {
     const caller = ic.caller();
     ic.print(`mint called from ${caller}`);
     _isCanisterCustodian();
@@ -423,12 +450,12 @@ export function mint(to: Principal, tokenId: nat, properties: propertyVariant): 
     }
     _addTokenMetadata(tokenId, {
         token_identifier: tokenId,
-        owner: caller,
+        owner: to,
         operator: null,
         properties,
         is_burned: false,
         minted_at: _nowTime(),
-        minted_by: caller,
+        minted_by: to,
         transferred_at: null,
         transferred_by: null,
         approved_at: null,
@@ -446,7 +473,7 @@ export function mint(to: Principal, tokenId: nat, properties: propertyVariant): 
     };
 }
 
-export function burn(tokenId: nat): Update<NatResponseDto> {
+export function burn(tokenId: TokenIdentifier): Update<NatResponseDto> {
     const caller = ic.caller();
     const token = tokens.get(tokenId);
     if (caller != token.owner) {
@@ -468,7 +495,7 @@ export function burn(tokenId: nat): Update<NatResponseDto> {
 // private
 
 function _totalUniqueHolders() {
-    return ownerList.size ? BigInt(ownerList.size) : null;
+    return BigInt(ownerList.size);
 }
 
 function _totalTransaction(): nat {
@@ -476,7 +503,7 @@ function _totalTransaction(): nat {
 }
 
 function _totalSupply(): nat {
-    return BigInt(tokens.size)
+    return BigInt(tokens.size);
 }
 
 function _isCanisterCustodian() {
@@ -486,11 +513,11 @@ function _isCanisterCustodian() {
     }
 }
 
-function _operatorOf(tokenId: nat): Principal | undefined {
+function _operatorOf(tokenId: TokenIdentifier): Principal | undefined {
     return tokens.get(tokenId)?.operator
 }
 
-function _updateOperatorCache(tokenId: nat, oldOperator?: Principal, newOperator?: Principal) {
+function _updateOperatorCache(tokenId: TokenIdentifier, oldOperator?: Principal, newOperator?: Principal) {
     const oldOperatorTokenIdentifiers = operators.get(oldOperator);
     if (!oldOperatorTokenIdentifiers || oldOperatorTokenIdentifiers.length === 0) {
         throw OperatorNotFound;
@@ -513,7 +540,7 @@ function _updateOperatorCache(tokenId: nat, oldOperator?: Principal, newOperator
     }
 }
 
-function _updateOwnerCache(tokenId: nat, oldOwner?: Principal, newOwner?: Principal) {
+function _updateOwnerCache(tokenId: TokenIdentifier, oldOwner?: Principal, newOwner?: Principal) {
     if (oldOwner) {
         const oldOwnerTokenIdentifiers = ownerList.get(oldOwner);
         if (!oldOwnerTokenIdentifiers) {
@@ -567,7 +594,7 @@ function _getOwnersTokenMetadata(owner: Principal): TokenMetadata[] {
     }
 }
 
-function _approve(to: Principal, tokenId: nat, newOperator?: Opt<Principal>) {
+function _approve(to: Principal, tokenId: TokenIdentifier, newOperator?: Opt<Principal>) {
     const token = tokens.get(tokenId);
     token.approved_at = _nowTime();
     token.approved_by = to;
@@ -575,7 +602,7 @@ function _approve(to: Principal, tokenId: nat, newOperator?: Opt<Principal>) {
     tokens.set(tokenId, token);
 }
 
-function _transfer(from: Principal, to: Principal, tokenId: nat) {
+function _transfer(from: Principal, to: Principal, tokenId: TokenIdentifier) {
     const token = tokens.get(tokenId);
     token.owner = to;
     token.transferred_by = from;
@@ -583,7 +610,7 @@ function _transfer(from: Principal, to: Principal, tokenId: nat) {
     token.operator = null;
 }
 
-function _addTokenMetadata(tokenId: nat, metadata: TokenMetadata) {
+function _addTokenMetadata(tokenId: TokenIdentifier, metadata: TokenMetadata) {
     tokens.set(tokenId, metadata);
 }
 

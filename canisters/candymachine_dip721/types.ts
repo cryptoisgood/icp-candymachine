@@ -1,4 +1,4 @@
-import {Variant, Principal, nat, Opt} from "azle";
+import {Variant, Principal, nat, Opt, nat8, nat32, int, nat64, int64, nat16, int16, int32, int8, float64, float32} from "azle";
 
 // export type TokenId = nat;
 
@@ -12,22 +12,39 @@ export type TokenIdPrincipal = {
     tokenIds: nat[]
 };
 
-type propertyVariant = [string, string];
+type StringProperty = [string, GenericValue];
+export type GenericValue = Variant<{
+    Nat64Content: nat64;
+    Nat32Content : nat32;
+    BoolContent : boolean;
+    Nat8Content : nat8;
+    Int64Content : int64;
+    IntContent : int;
+    NatContent : nat;
+    Nat16Content : nat16;
+    Int32Content : int32;
+    Int8Content : int8;
+    FloatContent : float64;
+    Int16Content : int16;
+    BlobContent : nat8[];
+    Principal : Principal;
+    TextContent : string;
+    }>;
 
 export type TokenMetadata = {
-    token_identifier: nat,
-    owner: Principal,
-    operator?: Opt<Principal>,
-    properties: propertyVariant,
-    is_burned: boolean,
-    minted_at: nat,
-    minted_by: Principal,
-    transferred_at?: Opt<nat>,
+    transferred_at?: Opt<nat64>,
     transferred_by?: Opt<Principal>,
-    approved_at?: Opt<nat>,
-    approved_by?: Opt<Principal>,
-    burned_at?: Opt<nat>,
+    owner?: Opt<Principal>,
+    operator?: Opt<Principal>,
+    properties: StringProperty[],
+    is_burned: boolean,
+    token_identifier: nat,
+    burned_at?: Opt<nat64>,
     burned_by?: Opt<Principal>
+    approved_at?: Opt<nat64>,
+    approved_by?: Opt<Principal>,
+    minted_at: nat64,
+    minted_by: Principal,
 };
 
 // http

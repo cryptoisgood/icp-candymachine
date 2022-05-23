@@ -7,8 +7,10 @@ import {atom, useRecoilState} from "recoil";
 import {useEffect} from "react";
 import {canisterAtom, connectedAtom, hostAtom, isAdminAtom, leftToMintAtom, loadingAtom, maxTokensAtom} from "./atoms";
 import Minter from "./minter";
-import {config} from "../../../candymachine-config";
+import {config} from "./candymachine-config";
 import AdminConfig from "./admin-config";
+import { getNFTActor } from '@psychedelic/dab-js'
+import DIP721v2 from '@psychedelic/dab-js/dist/standard_wrappers/nft_standards/dip_721_v2';
 
 const App: React.FC = () => {
 
@@ -27,14 +29,18 @@ const App: React.FC = () => {
         setCanister([nftCanister, candyMachineCanister]);
     }, []);
 
-
-
     async function afterConnected() {
         setConnected(true);
         const publicKey = await (window as any).ic.plug.agent.getPrincipal();
         if (publicKey.toString() === config.PLUG_ADMIN_PRINCIPAL) {
             setIsAdmin(true);
         }
+    }
+
+
+    async function testt() {
+        const NFTActor = getNFTActor({ canisterId: nftCanister, agent: (window as any).ic.plug.agent, standard: "DIP721v2" });
+        console.log(await NFTActor.details(1));
     }
 
     return (
@@ -59,6 +65,7 @@ const App: React.FC = () => {
             <Card style={{ width: '28rem' }}>
                 <Card.Body>
                     <Card.Title>Candy Machine </Card.Title>
+                    {/*<Button onClick={testt}>Test Nft</Button>*/}
                     <Card.Subtitle className="mb-2 text-muted"><a href={"https://github.com/cryptoisgood/icp-candymachine"}>Github</a></Card.Subtitle>
                     {!connected &&
                         <PlugConnect
