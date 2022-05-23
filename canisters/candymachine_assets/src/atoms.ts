@@ -27,7 +27,10 @@ export const connectedAtom = atom({
 
 export const maxTokensAtom = atom({
     key: 'max_tokens',
-    default: 0
+    default: 0,
+    effects: [
+        localStorageEffect("max_tokens")
+    ]
 });
 
 export const leftToMintAtom = atom({
@@ -50,7 +53,10 @@ export const isAdminAtom = atom({
 
 export const isInitiatedAtom = atom({
     key: 'is_initiated',
-    default: false
+    default: false,
+    effects: [
+        localStorageEffect("is_initiated")
+    ]
 });
 
 export const hostAtom = atom({
