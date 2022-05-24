@@ -5,14 +5,25 @@ import {canisterId as nftCanister} from "../../declarations/candymachine_dip721"
 import {canisterId as candyMachineCanister, idlFactory} from "../../declarations/candymachine";
 import {atom, useRecoilState} from "recoil";
 import {useEffect} from "react";
-import {canisterAtom, connectedAtom, hostAtom, isAdminAtom, leftToMintAtom, loadingAtom, maxTokensAtom} from "./atoms";
+import {
+    canisterAtom,
+    connectedAtom,
+    hostAtom,
+    isAdminAtom,
+    isInitiatedAtom,
+    leftToMintAtom,
+    loadingAtom,
+    maxTokensAtom
+} from "./atoms";
 import Minter from "./minter";
 import {config} from "./candymachine-config";
 import AdminConfig from "./admin-config";
 import { getNFTActor } from '@psychedelic/dab-js'
 import DIP721v2 from '@psychedelic/dab-js/dist/standard_wrappers/nft_standards/dip_721_v2';
+import {isInit} from "./candymachine";
 
 const App: React.FC = () => {
+    const [initiated, setIsInitiated] = useRecoilState(isInitiatedAtom);
 
     const [loading, setLoading] = useRecoilState(loadingAtom);
     const [connected, setConnected] = useRecoilState(connectedAtom);
@@ -27,7 +38,14 @@ const App: React.FC = () => {
 
     useEffect(() => {
         setCanister([nftCanister, candyMachineCanister]);
+        checkInit().then();
     }, []);
+    async function checkInit() {
+        const isInitiated = await isInit();
+        if (isInitiated) {
+            setIsInitiated(true);
+        }
+    }
 
     async function afterConnected() {
         setConnected(true);

@@ -1,8 +1,6 @@
 import * as React from "react";
 import {useRecoilState} from "recoil";
 import {hostAtom, isInitiatedAtom, loadingAtom} from "./atoms";
-import {useEffect} from "react";
-import {isInit} from "./candymachine";
 import {_SERVICE as dip721Service} from "../../declarations/candymachine_dip721/candymachine_dip721.did";
 import {canisterId as dip721contract, idlFactory as dip721Factory} from "../../declarations/candymachine_dip721";
 import {canisterId as candymachineContract, idlFactory as candyMachineFactory} from "../../declarations/candymachine";
@@ -13,18 +11,8 @@ import {Button} from "react-bootstrap";
 
 const AdminConfig: React.FC = () => {
     const [loading, setLoading] = useRecoilState(loadingAtom);
-    const [initiated, setIsInitiated] = useRecoilState(isInitiatedAtom);
+    const [initiated] = useRecoilState(isInitiatedAtom);
 
-    useEffect( ()=> {
-        checkInit().then();
-    }, []);
-
-    async function checkInit() {
-        const isInitiated = await isInit();
-        if (isInitiated) {
-            setIsInitiated(true);
-        }
-    }
 
     async function initiateCandyMachine() {
         // Initialise Agent, expects no return value

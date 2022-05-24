@@ -8,7 +8,7 @@ import {leftToMint, maxTokens} from "./candymachine";
 import {
     canisterAtom,
     connectedAtom,
-    hostAtom,
+    hostAtom, isAdminAtom,
     isInitiatedAtom,
     leftToMintAtom,
     loadingAtom,
@@ -18,6 +18,7 @@ import {_SERVICE} from "../../declarations/candymachine/candymachine.did";
 
 const Minter: React.FC = () => {
 
+    const [isAdmin, setIsAdmin] = useRecoilState(isAdminAtom);
     const [loading, setLoading] = useRecoilState(loadingAtom);
     const [maxTokensVar, setMaxTokensVar] = useRecoilState(maxTokensAtom);
     const [leftToMintVar, setLeftOverTokensVar] = useRecoilState(leftToMintAtom);
