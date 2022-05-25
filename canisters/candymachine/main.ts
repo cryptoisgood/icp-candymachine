@@ -56,24 +56,6 @@ export function init(): Init {
     ic.stableStorage<StableStorage>().initMint = false;
 }
 
-// //uncomment and deploy after
-//
-export function preUpgrade(): PreUpgrade {
-    const migrateCustoriand: Migrate<Principal[]> = ic.stableStorage<StableStorage>().custodians;
-    ic.stableStorage<StableStorage>().custodians = migrateCustoriand;
-
-    const migreatedCanister: Migrate<string> = ic.stableStorage<StableStorage>().nftCanister;
-    ic.stableStorage<StableStorage>().nftCanister = migreatedCanister;
-
-
-    const migrateInitMint: Migrate<boolean> = ic.stableStorage<StableStorage>().initMint;
-    ic.stableStorage<StableStorage>().initMint = migrateInitMint;
-}
-
-export function postUpgrade(): PostUpgrade {
-
-}
-
 
 export function startCaptcha(): Query<StringResponseDto> {
     return {
