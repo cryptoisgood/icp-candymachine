@@ -59,6 +59,14 @@ export const isInitiatedAtom = atom({
     ]
 });
 
+export const mintedAtom = atom({
+    key: 'minted',
+    default: false,
+    effects: [
+        localStorageEffect("minted")
+    ]
+});
+
 export const hostAtom = atom({
     key: 'host',
     default: undefined

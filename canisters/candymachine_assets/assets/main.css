@@ -1,7 +1,54 @@
+@font-face {
+    font-family: "glitch";
+    src: url(RubikGlitch-Regular.ttf) format("truetype");
+}
+
+@font-face {
+    font-family: "robot";
+    src: url(RobotoMono-Medium.ttf) format("truetype");
+}
+
 body {
     font-family: sans-serif !important;
     font-size: 1.5rem !important;
-    background-color: #021c2d !important;
+    background: url("background.jpg")  no-repeat center center fixed !important;
+    background-size: cover;
+}
+
+.title-align{
+    text-align: center;
+    padding-top: 40px;
+}
+
+.title{
+    font-family: "robot", serif;
+    -webkit-text-fill-color: white; /* Will override color (regardless of order) */
+    -webkit-text-stroke-width: 1px;
+    -webkit-text-stroke-color: #00ffff;
+    color: #00ffff;
+    font-size: 80pt;
+    -webkit-animation: glow 1s ease-in-out infinite alternate;
+    -moz-animation: glow 1s ease-in-out infinite alternate;
+    animation: glow 1s ease-in-out infinite alternate;
+    margin-bottom: 40px;
+}
+
+@-webkit-keyframes glow {
+    from {
+        text-shadow: 0 0 10px #fff, 0 0 20px #9bb7b7, 0 0 30px #02a9a9, 0 0 40px #00ffff, 0 0 50px #02a9a9, 0 0 60px #02a9a9, 0 0 70px #02a9a9;
+    }
+    to {
+        text-shadow: 0 0 20px #fff, 0 0 30px #00ffff, 0 0 40px #00ffff, 0 0 50px #00ffff, 0 0 60px #02a9a9, 0 0 70px #02a9a9, 0 0 80px #02a9a9;
+    }
+}
+
+.font-body{
+    font-family: "robot", serif;
+    -webkit-text-fill-color: white; /* Will override color (regardless of order) */
+    -webkit-text-stroke-width: 1px;
+    -webkit-text-stroke-color: #00ffff;
+    color: #00ffff;
+    font-size: 40pt;
 }
 
 img {
@@ -36,10 +83,54 @@ button[type="submit"] {
 #greeting:empty {
     display: none;
 }
-.margin-top{
-    margin-top: 400px;
+.counter {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 70%;
+    margin: 100px auto;
+    padding: 10px;
+    background: linear-gradient(25deg, #252525, #1b1b2c, #262626);
 }
 
-.minter-dialog {
+.counter .time {
+    margin-right: 30px;
+}
 
+.counter .time-value {
+    padding: 1px;
+    font-size: 500%;
+    color: #fff;
+    line-height: 1;
+}
+
+.time-label {
+    text-align: center;
+    font-size: 20px;
+    color: white;
+}
+
+.margin-cube{
+    margin-top: 80px;
+}
+
+.mint-button{
+    padding: 50px !important;
+    border: none !important;
+}
+
+.mint-button:hover {
+    background-color: rgba(13, 110, 253, 0.32) !important;
+}
+
+.viewp{
+    height:100vh;
+}
+
+.block-link{
+    display: block;
+}
+
+.white-text{
+    color: rgba(255, 255, 255, 0.52);
 }

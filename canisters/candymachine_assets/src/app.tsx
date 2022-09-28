@@ -1,5 +1,5 @@
 import * as React from "react";
-import {Button, Card, Col, Container, Modal, Row, Spinner} from "react-bootstrap";
+import {Button, Card, Col, Container, Image, Modal, Row, Spinner} from "react-bootstrap";
 import PlugConnect from '@psychedelic/plug-connect';
 import {canisterId as nftCanister} from "../../declarations/candymachine_dip721";
 import {canisterId as candyMachineCanister, idlFactory} from "../../declarations/candymachine";
@@ -11,16 +11,14 @@ import {
     hostAtom,
     isAdminAtom,
     isInitiatedAtom,
-    leftToMintAtom,
     loadingAtom,
-    maxTokensAtom
+    mintedAtom
 } from "./atoms";
 import Minter from "./minter";
 import {config} from "./candymachine-config";
 import AdminConfig from "./admin-config";
-import { getNFTActor } from '@psychedelic/dab-js'
-import DIP721v2 from '@psychedelic/dab-js/dist/standard_wrappers/nft_standards/dip_721_v2';
 import {isInit} from "./candymachine";
+import Countdown from "react-countdown";
 
 const App: React.FC = () => {
     const [initiated, setIsInitiated] = useRecoilState(isInitiatedAtom);
@@ -30,6 +28,8 @@ const App: React.FC = () => {
     const [canister, setCanister] = useRecoilState(canisterAtom);
     const [isAdmin, setIsAdmin] = useRecoilState(isAdminAtom);
     const [host, setHost] = useRecoilState(hostAtom);
+    const [minted, setMinted] = useRecoilState(mintedAtom);
+
     const isDevelopment = process.env.NODE_ENV !== "production";
     if (isDevelopment) {
         console.log("started in dev");
@@ -41,7 +41,9 @@ const App: React.FC = () => {
         checkInit().then();
     }, []);
     async function checkInit() {
+        console.log("checked if initiated")
         const isInitiated = await isInit();
+        console.log(isInitiated);
         if (isInitiated) {
             setIsInitiated(true);
         }
@@ -54,15 +56,83 @@ const App: React.FC = () => {
             setIsAdmin(true);
         }
     }
+    const Completionist = () => <span>Box has been opened</span>;
 
+    const renderer = ({ days, hours, minutes, seconds, completed }) => {
+        if (completed) {
+            // Render a completed state
+            return <Completionist />;
+        } else {
+            // Render a countdown
+            return <>
+            <div className="counter">
+                <div className="time">
+                    <div className="time-value">{days.toString().padStart(2, '0')}</div>
+                    <div className="time-label">Days</div>
+                </div>
+                <div className="time">
+                    <div className="time-value">{hours.toString().padStart(2, '0')}</div>
+                    <div className="time-label">Hours</div>
+                </div>
+                <div className="time">
+                    <div className="time-value">{minutes.toString().padStart(2, '0')}</div>
+                    <div className="time-label">Minutes</div>
+                </div>
+                <div className="time">
+                    <div className="time-value">{seconds.toString().padStart(2, '0')}</div>
+                    <div className="time-label">Seconds</div>
+                </div>
+            </div>
+            </>
 
-    async function testt() {
-        const NFTActor = getNFTActor({ canisterId: nftCanister, agent: (window as any).ic.plug.agent, standard: "DIP721v2" });
-        console.log(await NFTActor.details(1));
-    }
+        }
+    };
 
     return (
-        <div className={"d-flex justify-content-center margin-top minter-dialog"}>
+        <>
+
+            <div className={"title-align viewp"}>
+                {isAdmin &&
+                    <AdminConfig></AdminConfig>
+                }
+                <img src={"label.png"}/>
+                <h1 className={"title"}>SECRET BOX NFT</h1>
+                <p className={"white-text"}>Use desktop for better experience</p>
+                <> { !minted && <>
+                    {!connected &&
+                        <>
+                        <PlugConnect
+                            dark
+                            whitelist={canister}
+                            host={host}
+                            onConnectCallback={afterConnected}
+                        />
+                            <a className={"block-link"} target={"none"} href={"https://medium.com/plugwallet/how-to-setup-a-wallet-in-plug-quick-guide-6504daaa37e9"}>What is Plug Wallet</a>
+                            <img className={"margin-cube"} src={"cube.png"}/>
+                            </>
+                    }
+
+
+                    {connected &&
+                        <Minter></Minter>
+                    }
+                    </>
+                }
+                    {!minted &&
+                        <h3 className={"font-body"}>Click on The Box to mint it for free. You'll receive airdrops on your Plug Wallet until countdown</h3>
+                    }
+                    {minted && <>
+                        <img className={"margin-cube"} src={"cube.png"}/>
+                        <h3 className={"font-body"}>Check your wallet for the box NFT</h3>
+                        <h3 className={"font-body"}>Airdrops every few days till the end of countdown</h3>
+                        <h3 className={"font-body"}>Limited Edition</h3>
+                        </>
+                    }
+
+                <Countdown className={"timer"} renderer={renderer} date={1666043233000}/>
+                </>
+            </div>
+            <div className={"d-flex justify-content-center margin-top minter-dialog"}>
             <Modal
                 show={loading}
                 size="sm"
@@ -80,29 +150,9 @@ const App: React.FC = () => {
                     </Spinner>
                 </Modal.Body>
             </Modal>
-            <Card style={{ width: '28rem' }}>
-                <Card.Body>
-                    <Card.Title>Candy Machine </Card.Title>
-                    {/*<Button onClick={testt}>Test Nft</Button>*/}
-                    <Card.Subtitle className="mb-2 text-muted"><a href={"https://github.com/cryptoisgood/icp-candymachine"}>Github</a></Card.Subtitle>
-                    {!connected &&
-                        <PlugConnect
-                            dark
-                            whitelist={canister}
-                            host={host}
-                            onConnectCallback={afterConnected}
-                        />
-                    }
-                    {isAdmin &&
-                        <AdminConfig></AdminConfig>
-                    }
 
-                    {connected &&
-                        <Minter></Minter>
-                    }
-                </Card.Body>
-            </Card>
-        </div>
+            </div>
+        </>
     );
 }
 

@@ -1,41 +1,24 @@
 {
   "canisters": {
     "candymachine_dip721": {
-      "package": "candymachine_rust_dip721",
+      "package": "candymachine_dip721",
       "candid": "canisters/candymachine_rust_dip721/src/main.did",
       "type": "rust"
     },
     "candymachine": {
-      "dependencies": [
-        "candymachine_dip721"
-      ],
       "type": "custom",
       "build": "npx azle candymachine",
       "root": "canisters/candymachine",
       "ts": "canisters/candymachine/main.ts",
       "candid": "canisters/candymachine/main.did",
-      "wasm": "target/wasm32-unknown-unknown/release/candymachine.wasm.gz"
+      "wasm": "target/wasm32-unknown-unknown/release/candymachine.wasm"
     },
     "candymachine_assets": {
-      "dependencies": [
-        "candymachine",
-        "candymachine_dip721"
-      ],
       "frontend": {
         "entrypoint": "canisters/candymachine_assets/src/index.html"
       },
       "source": [
-        "canisters/candymachine_assets/assets",
         "dist/candymachine_assets/"
-      ],
-      "type": "assets"
-    },
-    "asset_canister": {
-      "dependencies": [
-        "candymachine_assets"
-      ],
-      "source": [
-        "canisters/asset_canister/assets"
       ],
       "type": "assets"
     }
@@ -46,7 +29,7 @@
       "packtool": ""
     }
   },
-  "dfx": "0.10.0",
+  "dfx": "0.11.1",
   "networks": {
     "local": {
       "bind": "127.0.0.1:8000",

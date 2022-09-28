@@ -1,6 +1,6 @@
 import * as React from "react";
 import {useRecoilState} from "recoil";
-import {hostAtom, isInitiatedAtom, loadingAtom} from "./atoms";
+import {isInitiatedAtom, loadingAtom} from "./atoms";
 import {_SERVICE as dip721Service} from "../../declarations/candymachine_dip721/candymachine_dip721.did";
 import {canisterId as dip721contract, idlFactory as dip721Factory} from "../../declarations/candymachine_dip721";
 import {canisterId as candymachineContract, idlFactory as candyMachineFactory} from "../../declarations/candymachine";
@@ -36,9 +36,9 @@ const AdminConfig: React.FC = () => {
             canisterId: candymachineContract,
             interfaceFactory: candyMachineFactory,
         });
-        await candymachineActor.setNftCanister(dip721contract);
+        await candymachineActor.setNftCanister(Principal.fromText(dip721contract));
         const canisterContract = await candymachineActor.getNftCanister();
-        if (dip721contract === canisterContract) {
+        if (dip721contract === canisterContract.toText()) {
             console.log("success");
         }
 

@@ -1,5 +1,5 @@
 import * as React from "react";
-import {Button, Card, Col, Container, Modal, Row, Spinner} from "react-bootstrap";
+import {Button, Card, Col, Container, Modal, Overlay, OverlayTrigger, Row, Spinner, Tooltip} from "react-bootstrap";
 import {canisterId as nftCanister} from "../../declarations/candymachine_dip721";
 import {canisterId as candyMachineCanister, idlFactory} from "../../declarations/candymachine";
 import {atom, useRecoilState} from "recoil";
@@ -12,7 +12,7 @@ import {
     isInitiatedAtom,
     leftToMintAtom,
     loadingAtom,
-    maxTokensAtom
+    maxTokensAtom, mintedAtom
 } from "./atoms";
 import {_SERVICE} from "../../declarations/candymachine/candymachine.did";
 
@@ -20,6 +20,7 @@ const Minter: React.FC = () => {
 
     const [isAdmin, setIsAdmin] = useRecoilState(isAdminAtom);
     const [loading, setLoading] = useRecoilState(loadingAtom);
+    const [minted, setMinted] = useRecoilState(mintedAtom);
     const [maxTokensVar, setMaxTokensVar] = useRecoilState(maxTokensAtom);
     const [leftToMintVar, setLeftOverTokensVar] = useRecoilState(leftToMintAtom);
     const [canister, setCanister] = useRecoilState(canisterAtom);
@@ -54,11 +55,12 @@ const Minter: React.FC = () => {
             canisterId: candyMachineCanister,
             interfaceFactory: idlFactory,
         });
-        const resp = await NNSUiActor.mint("");
+        const resp = await NNSUiActor.mint();
         console.log(resp);
         leftToMint().then((resp) => {
             setLeftOverTokensVar(Number(resp));
             setLoading(false);
+            setMinted(true);
         });
     }
 
@@ -66,15 +68,26 @@ const Minter: React.FC = () => {
     return (
         <>
             <Container>
+                {/*<Row>*/}
+                {/*    <Col>*/}
+                {/*        {initiated &&*/}
+                {/*            <p>{leftToMintVar} of {maxTokensVar} minted</p>*/}
+                {/*        }*/}
+                {/*    </Col>*/}
+                {/*</Row>*/}
                 <Row>
                     <Col>
-                        {initiated &&
-                            <p>{leftToMintVar} of {maxTokensVar} minted</p>
-                        }
+                        <h1 className={"title"}>SOLD OUT</h1>
                     </Col>
                 </Row>
                 <Row>
-                    <Col><Button disabled={!initiated} onClick={mint} variant="outline-primary">Mint</Button></Col>
+                    <Col>
+                        <OverlayTrigger overlay={<Tooltip id="tooltip-disabled">Mint</Tooltip>}>
+                            <Button className={"mint-button"} disabled={true} onClick={mint} variant="outline-primary">
+                                <img className={"margin-cube"} src={"cube.png"}/>
+                            </Button>
+                        </OverlayTrigger>
+                    </Col>
                 </Row>
             </Container>
         </>

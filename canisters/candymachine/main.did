@@ -13,9 +13,9 @@ service: () -> {
     "maxTokens": () -> (NatResponseDto) query;
     "price": () -> (FloatResponseDto) query;
     "isInit": () -> (bool) query;
-    "mint": (text) -> (NatResponseDto);
-    "setCustodians": (vec text) -> ();
-    "setNftCanister": (text) -> ();
-    "getNftCanister": () -> (text);
+    "mint": () -> (NatResponseDto);
+    "setCustodians": (vec principal) -> ();
+    "setNftCanister": (principal) -> ();
+    "getNftCanister": () -> (principal);
     "initiateMint": () -> ();
 }

@@ -99,7 +99,8 @@ module.exports = {
           to: path.join(__dirname, "dist", frontendDirectory),
         },
       ],
-    }),
+    }
+    ),
     new webpack.EnvironmentPlugin({
       ...canisterEnvVariables,
     }),
@@ -112,7 +113,7 @@ module.exports = {
   devServer: {
     proxy: {
       "/api": {
-        target: "http://localhost:8000",
+        target: "http://127.0.0.1:8000",
         changeOrigin: true,
         pathRewrite: {
           "^/api": "/api",

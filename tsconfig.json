@@ -9,5 +9,5 @@
     "allowSyntheticDefaultImports": true
   },
   "include": ["canisters/**/*"],
-  "exclude": ["canisters/candymachine", "canisters/candymachine_dip721"]
+  "exclude": ["canisters/candymachine_dip721"]
 }

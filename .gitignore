@@ -19,3 +19,5 @@ target/*
 **/declarations/**
 /canister_ids.json
 /nft-tools/nfts/
+/uniqueholders.txt
+/Cargo.lock

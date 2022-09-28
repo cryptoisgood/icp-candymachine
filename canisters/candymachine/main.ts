@@ -6,7 +6,6 @@ import {
     nat32,
     nat,
     Principal,
-    UpdateAsync,
     float32,
     nat8,
     Init,
@@ -51,11 +50,22 @@ const PRICE: float32 = config.PRICE;
 
 export function init(): Init {
     ic.print('init');
-    ic.stableStorage<StableStorage>().custodians = [config.PLUG_ADMIN_PRINCIPAL];
-    ic.stableStorage<StableStorage>().nftCanister = "";
-    ic.stableStorage<StableStorage>().initMint = false;
+    ic.print(config.PLUG_ADMIN_PRINCIPAL);
+    ic.stable_storage<StableStorage>().custodians = [Principal.fromText(config.PLUG_ADMIN_PRINCIPAL)];
+    ic.stable_storage<StableStorage>().initMint = false;
 }
 
+export function preUpgrade(): PreUpgrade {
+    const migrateCustoriand: Migrate<Principal[]> = ic.stable_storage<StableStorage>().custodians;
+    ic.stable_storage<StableStorage>().custodians = migrateCustoriand;
+
+    const migrateInitMint: Migrate<boolean> = ic.stable_storage<StableStorage>().initMint;
+    ic.stable_storage<StableStorage>().initMint = migrateInitMint;
+}
+
+export function postUpgrade(): PostUpgrade {
+
+}
 
 export function startCaptcha(): Query<StringResponseDto> {
     return {
@@ -63,16 +73,16 @@ export function startCaptcha(): Query<StringResponseDto> {
     };
 }
 
-export function* mint(captcha: string): UpdateAsync<NatResponseDto> {
-    if (!ic.stableStorage<StableStorage>().initMint){
+export function* mint(): Update<NatResponseDto> {
+    if (!ic.stable_storage<StableStorage>().initMint){
         ic.trap("mint hasn't been initiated");
     }
-
+    ic.trap("mint stopped for now");
     const caller = ic.caller();
     const tokenIdResp = yield _getNftCanister().totalSupply();
     const tokenId = tokenIdResp.ok;
     const result: CanisterResult<NatResponseDto> = yield _getNftCanister().mint(caller, BigInt(tokenId + 1n),
-        [["location", {TextContent: "https://comparator.cryptoisgood.studio/TechisGood.jpg"}]]
+        [["location", {TextContent: "https://v2dj5-oyaaa-aaaap-qap2a-cai.ic0.app/box.webm"}],["thumbnail", {TextContent: "https://v2dj5-oyaaa-aaaap-qap2a-cai.ic0.app/cube.png"}]]
     );
 
     if (MAX_TOKEN_ID === tokenId) {
@@ -102,36 +112,46 @@ export function price(): Query<FloatResponseDto> {
     }
 }
 
-export function setCustodians(custodians: string[]): Update<void>  {
+export function setCustodians(custodians: Principal[]): Update<void>  {
     _checkIfCustodian();
-    ic.stableStorage<StableStorage>().custodians = custodians;
+    ic.stable_storage<StableStorage>().custodians = custodians;
 }
 
 
-export function setNftCanister(id: string): Update<void> {
+export function setNftCanister(id: Principal): Update<void> {
     _checkIfCustodian();
-    ic.stableStorage<StableStorage>().nftCanister = id;
+    ic.stable_storage<StableStorage>().nftCanister = id;
 }
 
-export function getNftCanister(): Update<string>  {
-    return ic.stableStorage<StableStorage>().nftCanister;
+export function getNftCanister(): Update<Principal>  {
+    return ic.stable_storage<StableStorage>().nftCanister;
 }
 
 export function initiateMint(): Update<void> {
     _checkIfCustodian();
-    ic.stableStorage<StableStorage>().initMint = true;
+    ic.stable_storage<StableStorage>().initMint = true;
 }
 
 export function isInit(): Query<boolean> {
-    return ic.stableStorage<StableStorage>().initMint;
+    return ic.stable_storage<StableStorage>().initMint;
 }
 
 function _getNftCanister() {
-    return ic.canisters.NFTCanister<NFTCanister>(ic.stableStorage<StableStorage>().nftCanister);
+    return ic.canisters.NFTCanister<NFTCanister>(ic.stable_storage<StableStorage>().nftCanister);
 }
 
 function _checkIfCustodian() {
-    if (!ic.stableStorage<StableStorage>().custodians.includes(ic.caller())) {
+    ic.print(ic.stable_storage<StableStorage>().custodians[0].toText());
+    ic.print(ic.caller().toText());
+    let found = false;
+    const calledPrincipal = ic.caller().toText();
+    for (let custodian of ic.stable_storage<StableStorage>().custodians) {
+        if (custodian.toText() === calledPrincipal) {
+            found = true;
+        }
+    }
+
+    if (!found) {
         ic.trap(`${ic.caller()} is not custodian`);
     }
 }
